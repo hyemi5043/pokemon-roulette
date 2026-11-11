@@ -1,0 +1,2153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>포켓몬 챌린지 무작위 뽑기</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;700;900&display=swap');
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311042 100%);
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+
+    .font-jua { font-family: 'Jua', sans-serif; }
+
+    .switch-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-pop {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .btn-pop:hover {
+      transform: translateY(-3px) scale(1.02);
+    }
+    .btn-pop:active {
+      transform: translateY(1px) scale(0.98);
+    }
+
+    .chip {
+      transition: all 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chip.excluded {
+      opacity: 0.35;
+      filter: grayscale(80%);
+      text-decoration: line-through;
+    }
+
+    /* Modal Animation */
+    .modal-enter {
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+    @keyframes popIn {
+      0% { transform: scale(0.7); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+  </style>
+</head>
+<body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
+
+  <div class="max-w-4xl w-full space-y-6">
+
+    <!-- 헤더 -->
+    <header class="text-center space-y-2">
+      <div class="inline-flex items-center space-x-2 bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full border border-red-500/30 text-sm font-bold">
+        <span>⚡ POKÉMON CHALLENGE PICKER</span>
+      </div>
+      <h1 class="text-3xl md:text-5xl font-extrabold font-jua tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-red-400 via-amber-300 to-cyan-400">
+        포켓몬 챌린지 무작위 뽑기
+      </h1>
+      <p class="text-slate-400 text-sm md:text-base">세대, 타입, 전체 포켓몬, 포챔스 또는 커스텀 4칸 항목을 뽑아보세요!</p>
+    </header>
+
+    <!-- 메인 대시보드 -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+      <!-- 왼쪽: 미니게임 & 캔버스 (7열) -->
+      <div class="lg:col-span-7 space-y-4">
+
+        <!-- Target Selection Tabs -->
+        <div class="flex bg-slate-900/80 p-1.5 rounded-2xl border border-slate-700/60 font-bold text-sm overflow-x-auto space-x-1">
+          <button id="tab-gen" onclick="setCategory('gen')" class="flex-1 py-2 px-3 rounded-xl transition-all text-white bg-indigo-600 shadow-lg whitespace-nowrap">1~9세대</button>
+          <button id="tab-type" onclick="setCategory('type')" class="flex-1 py-2 px-3 rounded-xl transition-all text-slate-400 hover:text-white whitespace-nowrap">18가지 타입</button>
+          <button id="tab-all" onclick="setCategory('all')" class="flex-1 py-2 px-3 rounded-xl transition-all text-slate-400 hover:text-white whitespace-nowrap">🌟 전체 (1025+)</button>
+          <button id="tab-champ" onclick="setCategory('champ')" class="flex-1 py-2 px-3 rounded-xl transition-all text-slate-400 hover:text-white whitespace-nowrap">🏆 포챔스</button>
+          <button id="tab-custom" onclick="setCategory('custom')" class="flex-1 py-2 px-3 rounded-xl transition-all text-slate-400 hover:text-white whitespace-nowrap">🎨 커스텀 (4칸)</button>
+        </div>
+
+        <!-- Mini Game Mode Selector -->
+        <div id="gameModeSelector" class="grid grid-cols-4 gap-2">
+          <button id="mode-roulette" onclick="setGameMode('roulette')" class="switch-card p-3 rounded-2xl text-center btn-pop border-2 border-indigo-500 bg-indigo-950/40">
+            <div class="text-xl md:text-2xl">🎯</div>
+            <div class="text-xs font-bold mt-1">회전 룰렛</div>
+          </button>
+          <button id="mode-cannon" onclick="setGameMode('cannon')" class="switch-card p-3 rounded-2xl text-center btn-pop opacity-60">
+            <div class="text-xl md:text-2xl">💥</div>
+            <div class="text-xs font-bold mt-1">시크릿 대포</div>
+          </button>
+          <button id="mode-slot" onclick="setGameMode('slot')" class="switch-card p-3 rounded-2xl text-center btn-pop opacity-60">
+            <div class="text-xl md:text-2xl">🎰</div>
+            <div class="text-xs font-bold mt-1">슬롯머신</div>
+          </button>
+          <button id="mode-pokeball" onclick="setGameMode('pokeball')" class="switch-card p-3 rounded-2xl text-center btn-pop opacity-60">
+            <div class="text-xl md:text-2xl">🔮</div>
+            <div class="text-xs font-bold mt-1">몬스터볼 Pick</div>
+          </button>
+        </div>
+
+        <!-- 캔버스 연출 영역 -->
+        <div class="switch-card rounded-3xl p-4 flex flex-col items-center justify-center relative min-h-[360px] overflow-hidden">
+          <canvas id="gameCanvas" width="340" height="340" class="max-w-full"></canvas>
+          <div id="gameInstruction" class="absolute bottom-3 text-xs text-slate-400 bg-slate-900/80 px-3 py-1 rounded-full border border-slate-700 hidden">
+            몬스터볼 3개 중 1개를 클릭하세요!
+          </div>
+        </div>
+
+        <!-- 메인 실행 버튼 -->
+        <button id="spinBtn" onclick="startSpin()" class="w-full py-4 bg-gradient-to-r from-red-500 via-pink-500 to-amber-500 hover:from-red-600 hover:to-amber-600 text-white font-jua text-2xl md:text-3xl rounded-2xl shadow-xl shadow-red-500/25 btn-pop tracking-wider">
+          돌려 돌려 돌림판!
+        </button>
+
+      </div>
+
+      <!-- 오른쪽: 항목 설정 & 커스텀 입력 & 기록 (5열) -->
+      <div class="lg:col-span-5 space-y-4">
+
+        <!-- 커스텀 4칸 입력창 -->
+        <div id="customInputsCard" class="switch-card p-5 rounded-3xl space-y-3 hidden">
+          <h3 class="font-bold text-lg text-amber-300 flex items-center justify-between">
+            <span>🎨 커스텀 4칸 항목 설정</span>
+            <span class="text-xs text-slate-400 font-normal">직접 입력</span>
+          </h3>
+          <div class="grid grid-cols-1 gap-2">
+            <div>
+              <label class="text-xs text-slate-400 font-bold mb-1 block">칸 1</label>
+              <input type="text" id="custom-0" value="옵션 A" oninput="updateCustomItems()" class="w-full bg-black text-white font-bold border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-bold mb-1 block">칸 2</label>
+              <input type="text" id="custom-1" value="옵션 B" oninput="updateCustomItems()" class="w-full bg-black text-white font-bold border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-bold mb-1 block">칸 3</label>
+              <input type="text" id="custom-2" value="옵션 C" oninput="updateCustomItems()" class="w-full bg-black text-white font-bold border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+            </div>
+            <div>
+              <label class="text-xs text-slate-400 font-bold mb-1 block">칸 4</label>
+              <input type="text" id="custom-3" value="옵션 D" oninput="updateCustomItems()" class="w-full bg-black text-white font-bold border border-slate-700 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-amber-400">
+            </div>
+          </div>
+        </div>
+
+        <!-- 전체 탭 전용: 세대/타입 챌린지 필터 -->
+        <div id="filterCard" class="switch-card p-5 rounded-3xl space-y-4 hidden">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-emerald-300">🎯 챌린지 필터</h3>
+            <button onclick="resetFilters()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">필터 초기화</button>
+          </div>
+          <p class="text-xs text-slate-400">세대나 타입을 고르면 그 안에서만 뽑습니다. 아무것도 고르지 않으면 전체에서 뽑아요. 타입은 하나라도 맞으면 포함됩니다.</p>
+          <div>
+            <div class="text-xs text-slate-400 font-bold mb-2">세대</div>
+            <div id="filterGenChips" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-400 font-bold mb-2">타입</div>
+            <div id="filterTypeChips" class="flex flex-wrap gap-1.5"></div>
+          </div>
+          <label class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-800 cursor-pointer">
+            <span class="text-sm font-medium text-slate-300">리전폼 포함</span>
+            <input type="checkbox" id="filterFormsToggle" checked onchange="toggleForms()" class="w-4 h-4">
+          </label>
+          <div id="filterCount" class="text-center text-sm font-bold text-amber-300"></div>
+        </div>
+
+        <!-- 룰렛 항목 및 자동 제외 관리 카드 -->
+        <div id="itemControlCard" class="switch-card p-5 rounded-3xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-indigo-300" id="controlTitle">룰렛 항목 관리</h3>
+            <button onclick="resetCurrentCategory()" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700 transition-colors">
+              전체 복원
+            </button>
+          </div>
+
+          <div class="flex items-center justify-between bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+            <span class="text-sm font-medium text-slate-300">당첨 항목 자동 제외</span>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="autoExcludeToggle" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+
+          <div id="chipContainer" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-1">
+            <!-- 동적 생성이 이루어집니다 -->
+          </div>
+        </div>
+
+        <!-- 히스토리 목록 -->
+        <div class="switch-card p-5 rounded-3xl space-y-3">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-lg text-slate-200">최근 당첨 히스토리</h3>
+            <button onclick="clearHistory()" class="text-xs text-slate-400 hover:text-red-400 transition-colors">기록 삭제</button>
+          </div>
+          <div id="historyList" class="space-y-2 max-h-40 overflow-y-auto text-sm text-slate-300">
+            <div class="text-center text-slate-500 text-xs py-4">아직 뽑기 기록이 없습니다.</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- 당첨 결과 모달 -->
+  <div id="resultModal" class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+    <div class="switch-card bg-slate-900/90 border-2 border-amber-400/50 rounded-3xl p-6 max-w-sm w-full text-center space-y-5 modal-enter">
+      <div class="text-sm font-bold text-amber-400 uppercase tracking-widest">Congratulations!</div>
+      <div id="modalCategory" class="text-xs text-slate-400 font-medium">챌린지 결과</div>
+
+      <div class="py-2">
+        <div id="modalResultText" class="text-3xl md:text-4xl font-extrabold font-jua text-white drop-shadow-lg">
+          -
+        </div>
+      </div>
+
+      <button id="modalChallengeBtn" onclick="startChallengeFromResult('all')" class="hidden w-full py-3 px-2 bg-gradient-to-r from-emerald-400 to-cyan-500 text-slate-950 font-jua text-base rounded-xl font-bold shadow-lg btn-pop"></button>
+      <button id="modalChampBtn" onclick="startChallengeFromResult('champ')" class="hidden w-full py-3 px-2 bg-gradient-to-r from-sky-400 to-indigo-500 text-slate-950 font-jua text-base rounded-xl font-bold shadow-lg btn-pop"></button>
+
+      <button onclick="closeModal()" class="w-full py-3 bg-gradient-to-r from-amber-400 to-orange-500 text-slate-950 font-jua text-xl rounded-xl font-bold shadow-lg btn-pop">
+        확인
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // 1~9세대 데이터
+    const GEN_DATA = [
+      { id: 'gen1', name: '1세대 (관동)', color: '#EF4444' },
+      { id: 'gen2', name: '2세대 (성도)', color: '#F59E0B' },
+      { id: 'gen3', name: '3세대 (호연)', color: '#10B981' },
+      { id: 'gen4', name: '4세대 (신오)', color: '#06B6D4' },
+      { id: 'gen5', name: '5세대 (하나)', color: '#3B82F6' },
+      { id: 'gen6', name: '6세대 (칼로스)', color: '#6366F1' },
+      { id: 'gen7', name: '7세대 (알로라)', color: '#8B5CF6' },
+      { id: 'gen8', name: '8세대 (가라르)', color: '#EC4899' },
+      { id: 'gen9', name: '9세대 (팔데아)', color: '#F43F5E' }
+    ];
+
+    // 18타입 데이터
+    const TYPE_DATA = [
+      { id: 'normal', name: '노말', color: '#9199A1' },
+      { id: 'fire', name: '불꽃', color: '#FF9D55' },
+      { id: 'water', name: '물', color: '#5090D6' },
+      { id: 'grass', name: '풀', color: '#63BB5B' },
+      { id: 'electric', name: '전기', color: '#F4D23C' },
+      { id: 'ice', name: '얼음', color: '#73CEC0' },
+      { id: 'fighting', name: '격투', color: '#CE416B' },
+      { id: 'poison', name: '독', color: '#A552CC' },
+      { id: 'ground', name: '땅', color: '#D97845' },
+      { id: 'flying', name: '비행', color: '#8FA9DE' },
+      { id: 'psychic', name: '에스퍼', color: '#FA7179' },
+      { id: 'bug', name: '벌레', color: '#91C12F' },
+      { id: 'rock', name: '바위', color: '#C5B78C' },
+      { id: 'ghost', name: '고스트', color: '#5269AC' },
+      { id: 'dragon', name: '드래곤', color: '#0B6DC3' },
+      { id: 'dark', name: '악', color: '#5A5465' },
+      { id: 'steel', name: '강철', color: '#5A8EA2' },
+      { id: 'fairy', name: '페어리', color: '#EC8FE6' }
+    ];
+
+    // 커스텀 데이터
+    let customData = [
+      { id: 'c1', name: '옵션 A', color: '#F43F5E' },
+      { id: 'c2', name: '옵션 B', color: '#3B82F6' },
+      { id: 'c3', name: '옵션 C', color: '#10B981' },
+      { id: 'c4', name: '옵션 D', color: '#F59E0B' }
+    ];
+
+    // 전국도감 1~1025번 완벽 한글 매핑 DB
+    const POKEMON_NAMES = {
+      1:"이상해씨", 2:"이상해풀", 3:"이상해꽃", 4:"파이리", 5:"리자드", 6:"리자몽", 7:"꼬부기", 8:"어니부기", 9:"거북왕", 10:"캐터피",
+      11:"단데기", 12:"버터플", 13:"뿔충이", 14:"딱충이", 15:"독침붕", 16:"구구", 17:"피죤", 18:"피죤투", 19:"꼬렛", 20:"레트라",
+      21:"깨비참", 22:"깨비드리조", 23:"아보", 24:"아보크", 25:"피카츄", 26:"라이츄", 27:"모래두지", 28:"고지", 29:"니드런♀", 30:"니드리나",
+      31:"니드퀸", 32:"니드런♂", 33:"니드리노", 34:"니드킹", 35:"삐삐", 36:"픽시", 37:"식스테일", 38:"나인테일", 39:"푸린", 40:"푸크린",
+      41:"주뱃", 42:"골뱃", 43:"뚜벅쵸", 44:"냄새꼬", 45:"라플레시아", 46:"파라스", 47:"파라섹트", 48:"콘팡", 49:"도나리", 50:"디그다",
+      51:"닥트리오", 52:"나옹", 53:"페르시온", 54:"고라파덕", 55:"골덕", 56:"망키", 57:"성원숭", 58:"가디", 59:"윈디", 60:"발챙이",
+      61:"슈륙챙이", 62:"강챙이", 63:"캐이시", 64:"윤겔라", 65:"후딘", 66:"알통몬", 67:"근육몬", 68:"괴력몬", 69:"모다피", 70:"우츠동",
+      71:"우츠보트", 72:"왕눈해", 73:"독파리", 74:"꼬마돌", 75:"데구리", 76:"딱구리", 77:"포니타", 78:"날씽마", 79:"야돈", 80:"야도란",
+      81:"코일", 82:"레어코일", 83:"파오리", 84:"두두", 85:"두트리오", 86:"쥬쥬", 87:"쥬레곤", 88:"질퍽이", 89:"질뻐기", 90:"셀러",
+      91:"파르셀", 92:"고오스", 93:"고우스트", 94:"팬텀", 95:"롱스톤", 96:"슬리프", 97:"슬리퍼", 98:"크랩", 99:"킹크랩", 100:"찌리리공",
+      101:"붐볼", 102:"아라리", 103:"나시", 104:"탕구리", 105:"텅구리", 106:"시라소몬", 107:"홍수몬", 108:"내루미", 109:"또가스", 110:"또도가스",
+      111:"뿔카노", 112:"코뿌리", 113:"럭키", 114:"덩쿠리", 115:"캥", 116:"쏘드라", 117:"시드라", 118:"콘치", 119:"왕콘치", 120:"별가사리",
+      121:"아쿠스타", 122:"마임맨", 123:"스라크", 124:"루주라", 125:"에레브", 126:"마그마", 127:"쁘사이저", 128:"켄타로스", 129:"잉어킹", 130:"갸라도스",
+      131:"라프라스", 132:"메타몽", 133:"이브이", 134:"샤미드", 135:"쥬피썬더", 136:"부스터", 137:"폴리곤", 138:"암나이트", 139:"암스타", 140:"투구",
+      141:"투구푸스", 142:"프테라", 143:"잠만보", 144:"프리져", 145:"썬더", 146:"파이어", 147:"미뇽", 148:"신뇽", 149:"망나뇽", 150:"뮤츠",
+      151:"뮤", 152:"치코리타", 153:"베이리프", 154:"메가니움", 155:"브케인", 156:"마그케인", 157:"블레이범", 158:"리아코", 159:"엘리게이", 160:"장크로다일",
+      161:"꼬리선", 162:"다꼬리", 163:"부우부", 164:"야부엉", 165:"레디바", 166:"레디안", 167:"페이검", 168:"아리아도스", 169:"크로뱃", 170:"초라기",
+      171:"랜턴", 172:"피츄", 173:"삐", 174:"푸푸린", 175:"토게피", 176:"토게틱", 177:"네이티", 178:"네이티오", 179:"메리프", 180:"보송송",
+      181:"전룡", 182:"아르코", 183:"마릴", 184:"마릴리", 185:"꼬지모", 186:"왕구리", 187:"통통코", 188:"두코", 189:"솜솜코", 190:"에이팜",
+      191:"해너츠", 192:"해루미", 193:"왕자리", 194:"우파", 195:"누오", 196:"에브이", 197:"블래키", 198:"니로우", 199:"야도킹", 200:"무우마",
+      201:"안농", 202:"마자용", 203:"키링키", 204:"피콘", 205:"쏘콘", 206:"노고치", 207:"글라이거", 208:"강철톤", 209:"블루", 210:"그랑블루",
+      211:"침바루", 212:"핫삼", 213:"단단지", 214:"헤라크로스", 215:"포푸니", 216:"깜지곰", 217:"링곰", 218:"마그마그", 219:"마그카르고", 220:"꾸꾸리",
+      221:"메꾸리", 222:"코산호", 223:"총어", 224:"대포무노", 225:"딜리버드", 226:"만타인", 227:"무장조", 228:"델빌", 229:"헬가", 230:"킹드라",
+      231:"코코리", 232:"코리갑", 233:"폴리곤2", 234:"노라키", 235:"루브도", 236:"배루키", 237:"카포에라", 238:"뽀뽀라", 239:"에레키드", 240:"마그비",
+      241:"밀탱크", 242:"해피너스", 243:"라이코", 244:"앤테이", 245:"스이쿤", 246:"애버라스", 247:"데기라스", 248:"마기라스", 249:"루기아", 250:"칠색조",
+      251:"세레비", 252:"나무지기", 253:"나무돌이", 254:"나무킹", 255:"아차모", 256:"영치코", 257:"번치코", 258:"물짱이", 259:"늪짱이", 260:"대짱이",
+      261:"포챠나", 262:"그라에나", 263:"지그제구리", 264:"직구리", 265:"개무소", 266:"실쿤", 267:"뷰티플라이", 268:"카스쿤", 269:"독케일", 270:"연꽃몬",
+      271:"로토스", 272:"로파파", 273:"도토", 274:"잎새코", 275:"다탱구", 276:"테일로", 277:"스왈로", 278:"갈모매", 279:"패리퍼", 280:"랄토스",
+      281:"킬리아", 282:"가디안", 283:"비구술", 284:"비나방", 285:"버섯꼬", 286:"버섯모", 287:"게을로", 288:"발바로", 289:"게을킹", 290:"토중몬",
+      291:"아이스크", 292:"껍질몬", 293:"소곤", 294:"노공룡", 295:"폭음룡", 296:"마크", 297:"하리뭉", 298:"루리리", 299:"코코파스", 300:"에나비",
+      301:"델케티", 302:"깜까미", 303:"입치트", 304:"가보리", 305:"갱도라", 306:"보스로라", 307:"요가랑", 308:"요가램", 309:"썬더라이", 310:"썬더볼트",
+      311:"플러시", 312:"마이농", 313:"볼비트", 314:"네오비트", 315:"로젤리아", 316:"꼴깍몬", 317:"꿀꺽몬", 318:"샤프니아", 319:"샤크니아", 320:"고래왕자",
+      321:"고래왕", 322:"둔타", 323:"폭타", 324:"코터스", 325:"피그점프", 326:"피그킹", 327:"얼루기", 328:"톱치", 329:"비브라바", 330:"플라이곤",
+      331:"선인왕", 332:"밤선인", 333:"파비코", 334:"파비코리", 335:"쟝고", 336:"세비퍼", 337:"루나톤", 338:"솔록", 339:"미꾸리", 340:"메깅",
+      341:"가재군", 342:"가재장군", 343:"오뚝군", 344:"점토도리", 345:"릴링", 346:"릴리요", 347:"아노딥스", 348:"아말도", 349:"빈티나", 350:"밀로틱",
+      351:"캐스퐁", 352:"켈리몬", 353:"어둠대신", 354:"다크펫", 355:"해골몽", 356:"미라몽", 357:"트로피우스", 358:"치렁", 359:"앱솔", 360:"마자",
+      361:"눈꼬마", 362:"얼음귀신", 363:"대굴레오", 364:"씨레오", 365:"씨카이저", 366:"진주몽", 367:"헌테일", 368:"분홍장이", 369:"시라칸", 370:"사랑동이",
+      371:"아공이", 372:"쉘곤", 373:"보만다", 374:"메탕", 375:"메탕구", 376:"메타그로스", 377:"레지락", 378:"레지아이스", 379:"레지스틸", 380:"라티아스",
+      381:"라티오스", 382:"가이오가", 383:"그란돈", 384:"레쿠쟈", 385:"지라치", 386:"테오키스", 387:"모부기", 388:"수풀부기", 389:"토대부기", 390:"불꽃숭이",
+      391:"파이숭이", 392:"초염몽", 393:"팽도리", 394:"팽태자", 395:"엠페르트", 396:"찌르꼬", 397:"찌르버드", 398:"찌르호크", 399:"비버니", 400:"비버통",
+      401:"귀뚤뚜기", 402:"귀뚤톡크", 403:"꼬링크", 404:"럭시오", 405:"렌트라", 406:"꼬몽울", 407:"로즈레이드", 408:"두개도스", 409:"램펄드", 410:"방패톱스",
+      411:"바리톱스", 412:"도롱충이", 413:"도롱마담", 414:"나메일", 415:"세꿀버리", 416:"비퀸", 417:"파치리스", 418:"브이젤", 419:"플로젤", 420:"체리버",
+      421:"체리꼬", 422:"깝질무", 423:"트리토돈", 424:"겟핸보숭", 425:"흔들풍손", 426:"둥실라이드", 427:"이어롤", 428:"이어롭", 429:"무우마직", 430:"돈크로우",
+      431:"나옹마", 432:"몬냥이", 433:"랑딸랑", 434:"스컹뿡", 435:"스컹탱크", 436:"동미러", 437:"동탁군", 438:"꼬지지", 439:"흉내내", 440:"핑복",
+      441:"페라페", 442:"화강돌", 443:"딥상어동", 444:"한바이트", 445:"한카리아스", 446:"먹고자", 447:"리오르", 448:"루카리오", 449:"히포포타스", 450:"하마돈",
+      451:"스콜피", 452:"드래피온", 453:"삐딱구리", 454:"독개굴", 455:"무스틈니", 456:"형광어", 457:"네오라이트", 458:"타만타", 459:"눈쓰개", 460:"눈설왕",
+      461:"포포니라", 462:"자포코일", 463:"내룸벨트", 464:"거대코뿌리", 465:"덩쿠림보", 466:"에레키블", 467:"마그마번", 468:"토게키스", 469:"메가자리", 470:"리피아",
+      471:"글레이시아", 472:"글라이온", 473:"맘모꾸리", 474:"폴리곤Z", 475:"엘레이드", 476:"대코파스", 477:"야느와르몽", 478:"눈여아", 479:"로토무", 480:"유크시",
+      481:"엠라이트", 482:"아그놈", 483:"디아루가", 484:"펄기아", 485:"히드런", 486:"레지기가스", 487:"기라티나", 488:"크레세리아", 489:"피오네", 490:"마나피",
+      491:"다크라이", 492:"쉐이미", 493:"아르세우스", 494:"비크티니", 495:"주리비얀", 496:"샤비", 497:"샤로다", 498:"뚜꾸리", 499:"차오꿀", 500:"염무왕",
+      501:"수댕이", 502:"쌍검자비", 503:"대검귀", 504:"보르쥐", 505:"보르그", 506:"요테리", 507:"하데리어", 508:"바랜드", 509:"쌔비냥", 510:"레파르다스",
+      511:"야나프", 512:"야나키", 513:"바오프", 514:"바오키", 515:"앗차프", 516:"앗차키", 517:"몽나", 518:"몽얌나", 519:"콩둘기", 520:"유토브",
+      521:"켄호로우", 522:"줄뮤마", 523:"제브라이", 524:"단굴", 525:"암트르", 526:"기가이어", 527:"또르박쥐", 528:"암박쥐", 529:"두더", 530:"몰드류",
+      531:"다부니", 532:"으랏차", 533:"토쇠골", 534:"노보청", 535:"동챙이", 536:"두까비", 537:"두빅굴", 538:"던지미", 539:"타격귀", 540:"두르보",
+      541:"두르쿤", 542:"모아머", 543:"마디네", 544:"휠구", 545:"펜드라", 546:"소미안", 547:"엘풍", 548:"치릴리", 549:"드레디어", 550:"배스나이",
+      551:"깜눈크", 552:"악비르", 553:"악비아르", 554:"달막화", 555:"불비달마", 556:"마라카치", 557:"돌살이", 558:"암팰리스", 559:"곤율랭", 560:"곤율거니",
+      561:"심보러", 562:"데스마스", 563:"데스니칸", 564:"프로토가", 565:"늑골라", 566:"아켄", 567:"아케오스", 568:"깨봉이", 569:"더스트나", 570:"조로아",
+      571:"조로아크", 572:"치라미", 573:"치라치노", 574:"고디탱", 575:"고디보미", 576:"고디모아젤", 577:"유니란", 578:"듀란", 579:"란쿨루스", 580:"꼬지보리",
+      581:"스완나", 582:"바닐프티", 583:"바닐리치", 584:"배바닐라", 585:"사철록", 586:"바라철록", 587:"에몽가", 588:"딱정곤", 589:"슈바르고", 590:"깜놀버슬",
+      591:"뽀록나", 592:"탱그릴", 593:"탱탱겔", 594:"맘복치", 595:"파쪼옥", 596:"전툴라", 597:"철시드", 598:"너트령", 599:"기어르", 600:"기기어르",
+      601:"기기기어르", 602:"저리어", 603:"저리릴", 604:"저리더프", 605:"리그레", 606:"벰크", 607:"불켜미", 608:"램프라", 609:"샹델라", 610:"터검니",
+      611:"액슨도", 612:"액스라이즈", 613:"코고미", 614:"툰베어", 615:"프리지오", 616:"쪼마리", 617:"어지리더", 618:"메더", 619:"비조푸", 620:"비조도",
+      621:"크리만", 622:"골비람", 623:"골루그", 624:"자망칼", 625:"절각참", 626:"버프론", 627:"수리둥보", 628:"워글", 629:"벌차이", 630:"버랜지나",
+      631:"앤티골", 632:"아이앤트", 633:"모노두", 634:"디헤드", 635:"삼삼드래", 636:"활화르바", 637:"불카모스", 638:"코바르온", 639:"테라키온", 640:"비리디온",
+      641:"토네로스", 642:"볼트로스", 643:"레시라무", 644:"제크로무", 645:"랜드로스", 646:"큐레무", 647:"케르디오", 648:"메로엣타", 649:"게노세크트", 650:"도치마론",
+      651:"도치보구", 652:"브리가론", 653:"푸호꼬", 654:"테르나", 655:"마폭시", 656:"개구마르", 657:"개굴반장", 658:"개굴닌자", 659:"파르빗", 660:"파르토",
+      661:"화살꼬빈", 662:"불화살빈", 663:"파이어로", 664:"분이벌레", 665:"분떠도리", 666:"비비용", 667:"레오꼬", 668:"화염레오", 669:"플라베베", 670:"플라엣테",
+      671:"플라제스", 672:"메이클", 673:"고고트", 674:"판짱", 675:"부란다", 676:"트리미앙", 677:"냐스퍼", 678:"냐오닉스", 679:"단칼빙", 680:"쌍칼빙",
+      681:"킬가르도", 682:"슈쁘", 683:"프레프티르", 684:"나름퍼프", 685:"나루림", 686:"오케이징", 687:"칼라마네로", 688:"거북손손", 689:"거북손데스", 690:"수레기",
+      691:"드래캄", 692:"완철포", 693:"블로스터", 694:"목도리키텔", 695:"일렉도리자드", 696:"티고라스", 697:"견고라스", 698:"아마루스", 699:"아마루르가", 700:"님피아",
+      701:"루차불", 702:"데덴네", 703:"멜리시", 704:"미끄메라", 705:"미끄네일", 706:"미끄래곤", 707:"클레피", 708:"나목령", 709:"대로트", 710:"호바귀",
+      711:"펌킨인", 712:"꽁어름", 713:"크레베이스", 714:"음뱃", 715:"음번", 716:"제르네아스", 717:"이벨타르", 718:"지가르데", 719:"디안시", 720:"후파",
+      721:"볼케니온", 722:"나몰빼미", 723:"빼미스로우", 724:"모크나이퍼", 725:"냐오불", 726:"냐오히트", 727:"어흥염", 728:"누리공", 729:"키요공", 730:"누리레느",
+      731:"콕코구리", 732:"크라파", 733:"왕큰부리", 734:"영구스", 735:"형사구스", 736:"턱지충이", 737:"전지충이", 738:"투구뿌논", 739:"오기지게", 740:"모단단게",
+      741:"춤추새", 742:"에블리", 743:"에리본", 744:"암멍이", 745:"루가루암", 746:"약어리", 747:"시마사리", 748:"더시마사리", 749:"머드나기", 750:"만마드",
+      751:"물거미", 752:"깨비물거미", 753:"짜랑랑", 754:"라란티스", 755:"자마슈", 756:"마셰이드", 757:"야도뇽", 758:"염뉴트", 759:"포곰곰", 760:"이븐곰",
+      761:"달콤아", 762:"달무리나", 763:"달코퀸", 764:"큐아링", 765:"하랑우탄", 766:"내던숭이", 767:"꼬시레", 768:"갑주무사", 769:"모래꿍", 770:"모래성이당",
+      771:"해무기", 772:"타입:널", 773:"실버디", 774:"메테노", 775:"자말라", 776:"폭거북스", 777:"토게데마루", 778:"따라큐", 779:"치갈기", 780:"할비롱",
+      781:"타타륜", 782:"짜랑꼬", 783:"짜랑고우", 784:"짜랑고우거", 785:"카푸꼬꼬꼭", 786:"카푸나비나", 787:"카푸브루루", 788:"카푸느지느", 789:"코스모그", 790:"코스모움",
+      791:"솔가레오", 792:"루나아라", 793:"텅비드", 794:"매시붕", 795:"페로코체", 796:"전수목", 797:"철화구야", 798:"종이신도", 799:"악식킹", 800:"네크로즈마",
+      801:"마기아나", 802:"마샤도", 803:"베베놈", 804:"아고용", 805:"차곡차곡", 806:"두파팡", 807:"제라오라", 808:"멜탄", 809:"멜메탈", 810:"흥나숭",
+      811:"채키몽", 812:"고릴타", 813:"염버니", 814:"래비풋", 815:"에이스번", 816:"울머기", 817:"누겔레온", 818:"인텔리레온", 819:"탐리스", 820:"요씽리스",
+      821:"파라꼬", 822:"파크로우", 823:"아머까오", 824:"두루지벌레", 825:"레돔벌레", 826:"이올브", 827:"훔쳐우", 828:"폭슬라이", 829:"꼬모카", 830:"백솜카",
+      831:"우르", 832:"배우르", 833:"깨물부기", 834:"갈가부기", 835:"멍파치", 836:"펄스멍", 837:"탄동", 838:"탄차곤", 839:"석탄산", 840:"과사삭벌레",
+      841:"애프룡", 842:"단지래플", 843:"모래뱀", 844:"사다이사", 845:"윽우지", 846:"찌로꼬치", 847:"꼬치조", 848:"일레즌", 849:"스트린더", 850:"태우지네",
+      851:"다태우지네", 852:"때때무노", 853:"케오퍼스", 854:"데인차", 855:"포트데스", 856:"몸지브림", 857:"손지브림", 858:"브리무음", 859:"메롱꿍", 860:"쏘겨모",
+      861:"오롱털", 862:"가로막구리", 863:"나이킹", 864:"산호르곤", 865:"창파나이트", 866:"마임꽁꽁", 867:"데스판", 868:"마빌크", 869:"마휘핑", 870:"대여르",
+      871:"찌르성게", 872:"누니머기", 873:"모스노우", 874:"돌헨진", 875:"빙큐보", 876:"에써르", 877:"모르페코", 878:"끼리동", 879:"대왕끼리동", 880:"파치래곤",
+      881:"파치르돈", 882:"어래곤", 883:"어치르돈", 884:"두랄루돈", 885:"드라꼰", 886:"드래런치", 887:"드래펄트", 888:"자시안", 889:"자마젠타", 890:"무한다이노",
+      891:"치고마", 892:"우라오스", 893:"자루도", 894:"레지에레키", 895:"레지드래고", 896:"블리포스", 897:"레이스포스", 898:"버드렉스", 899:"신비록", 900:"사마자르",
+      901:"다투곰", 902:"대쓰여너", 903:"포푸니크", 904:"장침바루", 905:"러브로스", 906:"나오하", 907:"나로테", 908:"마스카나", 909:"뜨아거", 910:"악뜨거",
+      911:"라우드본", 912:"꾸왁스", 913:"아꾸왁", 914:"웨이니발", 915:"맛보돈", 916:"퍼퓨돈", 917:"타랜툴라", 918:"트래피더", 919:"콩알뚜기", 920:"엑스레그",
+      921:"빠모", 922:"빠모트", 923:"빠르모트", 924:"두리쥐", 925:"파밀리쥐", 926:"쫀도기", 927:"바우첼", 928:"미니브", 929:"올리뇨", 930:"올리르",
+      931:"시비꼬", 932:"베베솔트", 933:"스태솔트", 934:"콜로솔", 935:"카르본", 936:"카디나르마", 937:"파라블레이즈", 938:"빈나", 939:"찌리배리", 940:"찌리비",
+      941:"찌리비크", 942:"오라티프", 943:"마피티프", 944:"땃쭈르", 945:"태깅구르", 946:"그푸리", 947:"공푸리", 948:"들눈해", 949:"육파리", 950:"절벼게",
+      951:"캡싸이", 952:"스코빌런", 953:"구르데", 954:"베라카스", 955:"하느라기", 956:"클레스퍼트라", 957:"어리짱", 958:"벼리짱", 959:"두드리짱", 960:"바다그다",
+      961:"바닥트리오", 962:"떨구새", 963:"맨돌핀", 964:"돌핀맨", 965:"부르롱", 966:"부르르룸", 967:"모토마", 968:"꿈트렁", 969:"초롱순", 970:"킬라플로르",
+      971:"망망이", 972:"묘두기", 973:"꼬이밍고", 974:"터벅고래", 975:"우락고래", 976:"가비루사", 977:"어써러셔", 978:"싸리용", 979:"저승갓숭", 980:"토오",
+      981:"키키링", 982:"노고고치", 983:"대도각참", 984:"위대한엄니", 985:"우렁찬꼬리", 986:"사나운버섯", 987:"날개치치는머리", 988:"땅을기는날개", 989:"무쇠털가죽", 990:"무쇠바퀴",
+      991:"무쇠보따리", 992:"무쇠손", 993:"무쇠머리", 994:"무쇠독나방", 995:"무쇠가시", 996:"드니차", 997:"드니꽁", 998:"드닐레이브", 999:"모으령", 1000:"타부자고",
+      1001:"총지엔", 1002:"파오젠", 1003:"딩루", 1004:"위유이", 1005:"고동치는달", 1006:"무쇠무인", 1007:"코라이돈", 1008:"미라이돈", 1009:"굽이치는물결", 1010:"무쇠잎새",
+      1011:"과미르", 1012:"차데스", 1013:"그우린차", 1014:"조타구", 1015:"이야후", 1016:"기로치", 1017:"오거폰", 1018:"브리두라스", 1019:"과미드라", 1020:"꿰뚫는화염",
+      1021:"날뛰는우레", 1022:"무쇠암석", 1023:"무쇠감투", 1024:"테라파고스", 1025:"복숭악동"
+    };
+
+    const ALL_POKEMON_DATA = [];
+    const colorPalette = ['#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#FF9D55', '#5090D6', '#63BB5B', '#F4D23C', '#CE416B', '#A552CC'];
+
+    // 1~1025번 도감 데이터 동적 로드
+    for (let i = 1; i <= 1025; i++) {
+      const paddedNum = String(i).padStart(4, '0');
+      const pokeName = POKEMON_NAMES[i] || `포켓몬 #${i}`;
+      ALL_POKEMON_DATA.push({
+        id: `p${i}`,
+        name: `#${paddedNum} ${pokeName}`,
+        color: colorPalette[i % colorPalette.length]
+      });
+    }
+
+    // 주요 리전폼 추가 (알로라/가라르/히스이/팔데아)
+    const regionalForms = [
+      "알로라 꼬렛", "알로라 레트라", "알로라 라이츄", "알로라 모래두지", "알로라 고지", "알로라 식스테일", "알로라 나인테일",
+      "알로라 디그다", "알로라 닥트리오", "알로라 나옹", "알로라 페르시온", "알로라 꼬마돌", "알로라 데구리", "알로라 딱구리",
+      "알로라 질퍽이", "알로라 질뻐기", "알로라 나시", "알로라 텅구리",
+      "가라르 나옹", "가라르 포니타", "가라르 날씽마", "가라르 야돈", "가라르 야도란", "가라르 파오리", "가라르 또도가스",
+      "가라르 마임맨", "가라르 프리져", "가라르 썬더", "가라르 파이어", "가라르 코산호", "가라르 지그제구리", "가라르 직구리",
+      "가라르 달막화", "가라르 불비달마", "가라르 메더", "가라르 야도킹",
+      "히스이 가디", "히스이 윈디", "히스이 침바루", "히스이 포푸니", "히스이 드레디어", "히스이 배스나이", "히스이 조로아",
+      "히스이 조로아크", "히스이 워글", "히스이 크레베이스", "히스이 모크나이퍼", "히스이 블레이범", "히스이 대검귀",
+      "팔데아 우파", "팔데아 켄타로스(불꽃)", "팔데아 켄타로스(물)", "다투곰(붉은 달)", "플라엣테(영혼의 꽃)"
+    ];
+
+    regionalForms.forEach((rf, idx) => {
+      ALL_POKEMON_DATA.push({
+        id: `r${idx + 1}`,
+        name: `[리전폼] ${rf}`,
+        color: '#8B5CF6'
+      });
+    });
+
+    // ===== 포켓몬별 세대/타입 데이터 =====
+    // 타입 코드: N노말 F불꽃 W물 G풀 E전기 I얼음 C격투 P독 D땅 L비행 Y에스퍼 B벌레 R바위 H고스트 A드래곤 K악 S강철 Z페어리
+    // 각 세대 문자열의 항목 순서 = 도감 번호 순서 (1세대 1~151번, 2세대 152~251번 ...)
+    const TYPE_CODE = {
+      normal: 'N', fire: 'F', water: 'W', grass: 'G', electric: 'E', ice: 'I',
+      fighting: 'C', poison: 'P', ground: 'D', flying: 'L', psychic: 'Y', bug: 'B',
+      rock: 'R', ghost: 'H', dragon: 'A', dark: 'K', steel: 'S', fairy: 'Z'
+    };
+
+    const GEN_TYPE_STRINGS = [
+      // 1세대 (1~151)
+      [
+        "GP,GP,GP,F,F,FL,W,W,W,B", "B,BL,BP,BP,BP,NL,NL,NL,N,N", "NL,NL,P,P,E,E,D,D,P,P",
+        "PD,P,P,PD,Z,Z,F,F,NZ,NZ", "PL,PL,GP,GP,GP,BG,BG,BP,BP,D", "D,N,N,W,W,C,C,F,F,W",
+        "W,WC,Y,Y,Y,C,C,C,GP,GP", "GP,WP,WP,RD,RD,RD,F,F,WY,WY", "ES,ES,NL,NL,NL,W,WI,P,P,W",
+        "WI,HP,HP,HP,RD,Y,Y,W,W,E", "E,GY,GY,D,D,C,C,N,P,P", "DR,DR,N,G,N,W,W,W,W,W",
+        "WY,YZ,BL,IY,E,F,B,N,W,WL", "WI,N,N,W,E,F,N,RW,RW,RW", "RW,RL,N,IL,EL,FL,A,A,AL,Y", "Y"
+      ],
+      // 2세대 (152~251)
+      [
+        "G,G,G,F,F,F,W,W,W,N", "N,NL,NL,BL,BL,BP,BP,PL,WE,WE", "E,Z,NZ,Z,ZL,YL,YL,E,E,E",
+        "G,WZ,WZ,R,W,GL,GL,GL,N,G", "G,BL,WD,WD,Y,K,KL,WY,H,Y", "Y,NY,B,BS,N,DL,SD,Z,Z,WP",
+        "BS,BR,BC,KI,N,N,F,FR,ID,ID", "WR,W,W,IL,WL,SL,KF,KF,WA,D", "D,N,N,N,C,C,IY,E,F,N",
+        "N,E,F,W,RD,RD,RK,YL,FL,YG"
+      ],
+      // 3세대 (252~386)
+      [
+        "G,G,G,F,FC,FC,W,WD,WD,K", "K,N,N,B,B,BL,B,BP,WG,WG", "WG,G,GK,GK,NL,NL,WL,WL,YZ,YZ",
+        "YZ,BW,BL,G,GC,N,N,N,BD,BL", "BH,N,N,N,C,C,NZ,R,N,N", "KH,SZ,SR,SR,SR,CY,CY,E,E,E",
+        "E,B,B,GP,P,P,WK,WK,W,W", "FD,FD,F,Y,Y,N,D,DA,DA,G", "GK,NL,AL,N,P,RY,RY,WD,WD,W",
+        "WK,DY,DY,RG,RG,RB,RB,W,W,N", "N,H,H,H,H,GL,Y,K,Y,I", "I,IW,IW,IW,W,W,W,WR,W,A",
+        "A,AL,SY,SY,SY,R,I,S,AY,AY", "W,D,AL,SY,Y"
+      ],
+      // 4세대 (387~493)
+      [
+        "G,G,GD,F,FC,FC,W,W,WS,NL", "NL,NL,N,NW,B,B,E,E,E,GP", "GP,R,R,RS,RS,B,BG,BL,BL,BL",
+        "E,W,W,G,G,W,WD,N,HL,HL", "N,N,H,KL,N,N,Y,KP,KP,SY", "SY,R,YZ,N,NL,HK,DA,DA,DA,N",
+        "C,CS,D,D,PB,PK,PC,PC,G,W", "W,WL,GI,GI,KI,ES,N,DR,G,E", "F,ZL,BL,G,I,DL,ID,N,YC,RS",
+        "H,IH,EH,Y,Y,Y,SA,WA,FS,N", "HA,Y,W,W,K,G,N"
+      ],
+      // 5세대 (494~649)
+      [
+        "YF,G,G,G,F,FC,FC,W,W,W", "N,N,N,N,N,K,K,G,G,F", "F,W,W,Y,Y,NL,NL,NL,E,E",
+        "R,R,R,YL,YL,D,DS,N,C,C", "C,W,WD,WD,C,C,BG,BG,BG,BP", "BP,BP,GZ,GZ,G,G,W,DK,DK,DK",
+        "F,F,G,BR,BR,KC,KC,YL,H,H", "WR,WR,RL,RL,P,P,K,K,N,N", "Y,Y,Y,Y,Y,Y,WL,WL,I,I",
+        "I,NG,NG,EL,B,BS,GP,GP,WH,WH", "W,BE,BE,GS,GS,S,S,S,E,E", "E,Y,Y,HF,HF,HF,A,A,A,I",
+        "I,I,B,B,DE,C,C,A,DH,DH", "KS,KS,N,NL,NL,KL,KL,F,BS,KA", "KA,KA,BF,BF,SC,RC,GC,L,EL,AF",
+        "AE,DL,AI,WC,NY,BS"
+      ],
+      // 6세대 (650~721)
+      [
+        "G,G,GC,F,F,FY,W,W,WK,N", "ND,NL,FL,FL,B,B,BL,FN,FN,Z", "Z,Z,G,G,C,CK,N,Y,Y,SH",
+        "SH,SH,Z,Z,Z,Z,KY,KY,RW,RW", "PW,PA,W,W,EN,EN,RA,RA,RI,RI", "Z,CL,EZ,RZ,A,A,A,SZ,HG,HG",
+        "HG,HG,I,I,LA,LA,Z,KL,AD,RZ", "YH,FW"
+      ],
+      // 7세대 (722~809)
+      [
+        "GL,GL,GH,F,F,FK,W,W,WZ,NL", "NL,NL,N,N,B,BE,BE,C,CI,FL", "BZ,BZ,R,R,W,PW,PW,D,D,WB",
+        "WB,G,G,GZ,GZ,PF,PF,NC,NC,G", "G,G,Z,NY,C,BW,BW,HD,HD,W", "N,N,RL,N,FA,ES,HZ,WY,NA,HG",
+        "A,AC,AC,EZ,YZ,GZ,WZ,Y,Y,YS", "YH,RP,BC,BC,E,SL,GS,KA,Y,SZ", "CH,P,PA,RS,FH,E,S,S"
+      ],
+      // 8세대 (810~905)
+      [
+        "G,G,G,F,F,F,W,W,W,N", "N,L,L,LS,B,BY,BY,K,K,G", "G,N,N,W,WR,E,E,R,RF,RF",
+        "GA,GA,GA,D,D,LW,W,W,EP,EP", "FB,FB,C,C,H,H,Y,Y,YZ,KZ", "KZ,KZ,KN,S,H,C,IY,DH,Z,Z",
+        "C,E,IB,IB,R,I,YN,EK,S,S", "EA,EI,WA,WI,SA,AH,AH,AH,Z,C", "PA,C,CK,KG,E,A,I,H,YG,NY",
+        "BR,DN,WH,CP,KP,ZL"
+      ],
+      // 9세대 (906~1025)
+      [
+        "G,G,GK,F,F,FH,W,W,WC,N", "N,B,B,B,BK,E,EC,EC,N,N", "Z,Z,GN,GN,GN,NL,R,R,R,F",
+        "FY,FH,E,E,EL,EL,K,K,PN,PN", "GH,GH,DG,DG,R,G,GF,B,BY,Y", "Y,ZS,ZS,ZS,W,W,LK,W,W,SP",
+        "SP,AN,S,RP,RP,H,H,LC,I,I", "WY,W,AW,CH,PD,NY,N,KS,DC,ZY", "GK,HZ,BC,EG,DS,IW,CE,KL,FP,RE",
+        "AI,AI,AI,H,SH,KG,KI,KD,KF,AK", "ZC,CA,EA,WA,GY,GA,GH,GH,PC,PY", "PZ,G,SA,GA,FA,EA,RY,SY,N,PH"
+      ]
+    ];
+
+    const DEX_TYPES = [];
+    const DEX_GEN = [];
+    GEN_TYPE_STRINGS.forEach((lines, gi) => {
+      lines.join(',').split(',').forEach(code => {
+        DEX_TYPES.push(code.trim());
+        DEX_GEN.push(gi + 1);
+      });
+    });
+    if (DEX_TYPES.length !== 1025) console.warn('타입 데이터 개수가 1025가 아닙니다:', DEX_TYPES.length);
+
+    // 리전폼 정보 (위 regionalForms 목록과 같은 순서: 알로라 18 → 가라르 18 → 히스이 13 → 팔데아 5)
+    const REGIONAL_INFO = [].concat(
+      ['KN','KN','EY','IS','IS','I','IZ','DS','DS','K','K','RE','RE','RE','PK','PK','GA','FH'].map(t => ({ gen: 7, types: t })),
+      ['S','Y','YZ','Y','PY','C','PZ','IY','YL','CL','KL','H','KN','KN','I','IF','DS','PY'].map(t => ({ gen: 8, types: t })),
+      ['FR','FR','KP','CP','GC','W','NH','NH','YL','IR','GC','FH','WK'].map(t => ({ gen: 8, types: t })),
+      ['PD','CF','CW','DN','Z'].map(t => ({ gen: 9, types: t }))
+    );
+
+    ALL_POKEMON_DATA.forEach(pk => {
+      const n = parseInt(pk.id.slice(1), 10);
+      if (pk.id.charAt(0) === 'p') {
+        pk.gen = DEX_GEN[n - 1];
+        pk.types = (DEX_TYPES[n - 1] || '').split('');
+        pk.isForm = false;
+      } else {
+        const info = REGIONAL_INFO[n - 1] || { gen: 0, types: '' };
+        pk.gen = info.gen;
+        pk.types = info.types.split('');
+        pk.isForm = true;
+      }
+    });
+
+    // 포켓몬 챔피언스(포챔스) 입국몬 목록 데이터 정의
+    // 원하는 리스트로 자유롭게 수정하세요. (이름은 따옴표로 감싸고 쉼표로 구분)
+    const CHAMPIONS_POKEMON_LIST = [
+      "이상해꽃", "리자몽", "거북왕", "독침붕", "피죤투", "아보크", "피카츄", "라이츄", "픽시", "나인테일",
+      "나인테일(알로라)", "푸크린", "라플레시아", "페르시온", "페르시온(알로라)", "윈디", "윈디(히스이)", "후딘", "괴력몬", "우츠보트",
+      "야도란", "야도란(가라르)", "파오리", "팬텀", "캥카", "아쿠스타", "마임맨", "쁘사이저", "켄타로스", "팔데아 켄타로스(워터종)",
+      "팔데아 켄타로스(블레이즈종)", "팔데아 켄타로스(컴뱃종)", "갸라도스", "메타몽", "샤미드", "쥬피썬더", "부스터", "대검귀", "프테라", "잠만보",
+      "망나뇽", "메가니움", "블레이범", "블레이범(히스이)", "장크로다일", "아리아도스", "전룡", "마릴리", "왕구리", "에브이",
+      "블래키", "야도킹", "야도킹(가라르)", "쏘콘", "강철톤", "침바루", "핫삼", "헤라크로스", "무장조", "헬가", "마기라스", "나무킹", "번치코",
+      "대짱이", "페리퍼", "가디안", "깜까미", "입치트", "보스로라", "요가램", "썬더볼트", "꿀꺽몬", "샤크니아", "폭타", "코터스", "파비코리",
+      "밀로틱", "캐스퐁", "다크펫", "치렁", "앱솔", "얼음귀신", "보만다", "메타그로스", "찌르호크", "렌트라", "로즈레이드", "램펄드", "바리톱스",
+      "이어롭", "화강돌", "한카리아스", "루카리오", "하마돈", "독개굴", "눈설왕", "포푸니라", "거대코뿌리", "리피아", "글레이시아", "글라이온",
+      "맘모꾸리", "엘레이드", "눈여아", "로토무", "샤로다", "염무왕", "대검귀(히스이)", "보르그", "레파르다스", "야나키", "바오키",
+      "앗차키", "몽얌나", "몰드류", "다부니", "노보청", "펜드라", "엘풍", "악비아르", "곤율랭", "데스니칸", "더스트나", "조로아크", "조로아크(히스이)",
+      "란쿨루스", "배바닐라", "에몽가", "저리더프", "샹델라", "툰베어", "메더", "골루그", "삼삼드래", "불카모스", "브리가론", "마폭시", "개굴닌자",
+      "파르토", "파이어로", "비비용", "화염레오", "플라엣테(영혼의 꽃)", "플라제스", "고고트", "부란다", "트리미앙", "냐오닉스", "킬가르도", "프레프티르",
+      "나루림", "칼라마네로", "거북손데스", "드래캄", "블로스터", "일레도리자드", "견고라스", "아마루르가", "님피아", "루차불", "데덴네", "미끄래곤",
+      "미끄래곤(히스이)", "클래피", "대로트", "펌킨인", "크레베이스", "크레베이스(히스이)", "음번", "모크나이퍼", "모크나이퍼(히스이)", "어흥염",
+      "누리레느", "왕큰부리", "모단단게", "루가루암(황혼의 모습)", "루가루암(한낮의 모습)", "루가루암(한밤중의 모습)", "더시마사리", "만마드",
+      "깨비물거미", "염뉴트", "달코퀸", "하랑우탄", "내던숭이", "갑주무사", "따라큐", "할비롱", "짜랑고우거", "고릴타", "에이스번", "인텔리레온",
+      "아머까오", "폭슬라이", "애프룡", "단지래풀", "사다이사", "스트린더", "케오퍼스", "포트데스", "브리무음", "오롱털", "나이킹", "창파나이트",
+      "마임꽁꽁", "데스판", "마휘핑", "대여르", "찌르성게", "에써르", "모르페코", "드래펄트", "신비록", "사마자르", "대쓰여너", "포푸니크", "장침바루",
+      "마스카나", "라우드본", "웨이니발", "빠르모트", "파밀리쥐", "올리르바", "시비꼬", "콜로솔트", "카디나르마", "파라블레이즈", "찌리배리", "마피티프",
+      "스코빌런", "클레스퍼트라", "두드리짱", "돌핀맨", "꿈트렁", "킬라플로르", "묘두기", "저승갓숭", "키키링", "대도각참", "드닐레이브", "타부자고",
+      "그우린차", "브리두라스", "과미드라"
+    ];
+
+    const CHAMPIONS_DATA = [];
+    CHAMPIONS_POKEMON_LIST.forEach((name, idx) => {
+      CHAMPIONS_DATA.push({
+        id: `champ_${idx + 1}`,
+        name: name,
+        color: colorPalette[idx % colorPalette.length]
+      });
+    });
+
+    // ===== 포챔스 입국몬에 세대/타입 정보 연결 =====
+    // 포챔스 목록의 표기가 도감 DB(POKEMON_NAMES)와 다른 이름은 여기서 맞춰 줍니다.
+    const CHAMP_ALIASES = {
+      '캥카': '캥', '페리퍼': '패리퍼', '올리르바': '올리르', '콜로솔트': '콜로솔',
+      '클래피': '클레피', '일레도리자드': '일렉도리자드', '단지래풀': '단지래플', '포푸니라': '포포니라'
+    };
+    // 리전폼 목록(regionalForms)에 없는 폼
+    const EXTRA_FORMS = {
+      '미끄래곤(히스이)': { gen: 8, types: 'AS' },
+      '팔데아 켄타로스(워터종)': { gen: 9, types: 'CW' },
+      '팔데아 켄타로스(블레이즈종)': { gen: 9, types: 'CF' },
+      '팔데아 켄타로스(컴뱃종)': { gen: 9, types: 'C' }
+    };
+    const NAME_TO_DEX = {};
+    Object.keys(POKEMON_NAMES).forEach(k => {
+      const nm = POKEMON_NAMES[k];
+      if (!(nm in NAME_TO_DEX)) NAME_TO_DEX[nm] = parseInt(k, 10);
+    });
+    const REGIONAL_INDEX = {};
+    regionalForms.forEach((nm, i) => { REGIONAL_INDEX[nm] = REGIONAL_INFO[i]; });
+
+    function resolveChampion(name) {
+      if (EXTRA_FORMS[name]) return Object.assign({ isForm: true }, EXTRA_FORMS[name]);
+      if (REGIONAL_INDEX[name]) return Object.assign({ isForm: true }, REGIONAL_INDEX[name]);
+      const m = name.match(/^(.+)\((알로라|가라르|히스이)\)$/);
+      if (m && REGIONAL_INDEX[m[2] + ' ' + m[1]]) {
+        return Object.assign({ isForm: true }, REGIONAL_INDEX[m[2] + ' ' + m[1]]);
+      }
+      const stripped = name.replace(/\(.*\)$/, '');
+      const dex = NAME_TO_DEX[CHAMP_ALIASES[stripped] || stripped];
+      if (dex) return { gen: DEX_GEN[dex - 1], types: DEX_TYPES[dex - 1], isForm: false };
+      return null;
+    }
+
+    const UNRESOLVED_CHAMPS = [];
+    CHAMPIONS_DATA.forEach(c => {
+      const info = resolveChampion(c.name);
+      if (info) {
+        c.gen = info.gen;
+        c.types = info.types.split('');
+        c.isForm = !!info.isForm;
+      } else {
+        c.gen = 0;
+        c.types = [];
+        c.isForm = false;
+        UNRESOLVED_CHAMPS.push(c.name);
+      }
+    });
+    if (UNRESOLVED_CHAMPS.length) console.warn('세대/타입을 찾지 못한 포챔스 항목(필터 사용 시 제외됨):', UNRESOLVED_CHAMPS);
+
+    let excludedSet = new Set();
+    let currentCategory = 'gen';
+    let currentGameMode = 'roulette';
+    let isSpinning = false;
+    let historyLog = [];
+
+    // 폭죽 효과 (웹 워커 미사용: 보안 경고 방지, 라이브러리 로드 실패 시에도 사이트는 정상 작동)
+    let fireConfetti = function () {};
+    try {
+      if (typeof confetti !== 'undefined') {
+        fireConfetti = confetti.create(null, { useWorker: false, resize: true });
+      }
+    } catch (e) {
+      console.warn('폭죽 효과를 사용할 수 없습니다:', e);
+    }
+
+    // Audio Context
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    let audioCtx = null;
+
+    function playSound(type) {
+      try {
+        if (!audioCtx) audioCtx = new AudioCtx();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'tick') {
+          osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.04);
+          gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.04);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.04);
+        } else if (type === 'win') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+          osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
+          osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
+          gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.5);
+        } else if (type === 'boom') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+          osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.3);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+          osc.start();
+          osc.stop(audioCtx.currentTime + 0.3);
+        }
+      } catch (e) {}
+    }
+
+    function getCurrentRawData() {
+      if (currentCategory === 'gen') return GEN_DATA;
+      if (currentCategory === 'type') return TYPE_DATA;
+      if (currentCategory === 'all') return ALL_POKEMON_DATA;
+      if (currentCategory === 'champ') return CHAMPIONS_DATA;
+      return customData;
+    }
+
+    // ===== 챌린지 필터 (전체 탭 / 포챔스 탭, 탭마다 따로 저장) =====
+    const filterStore = {
+      all:   { gens: new Set(), types: new Set(), forms: true },
+      champ: { gens: new Set(), types: new Set(), forms: true }
+    };
+    let lastPick = null;
+
+    function F() {
+      return filterStore[currentCategory === 'champ' ? 'champ' : 'all'];
+    }
+
+    function matchesFilter(pk) {
+      const f = F();
+      if (!f.forms && pk.isForm) return false;
+      if (f.gens.size && !f.gens.has(pk.gen)) return false;
+      if (f.types.size && !(pk.types || []).some(t => f.types.has(t))) return false;
+      return true;
+    }
+
+    function getActiveItems() {
+      if (currentCategory === 'all') return ALL_POKEMON_DATA.filter(matchesFilter);
+      if (currentCategory === 'champ') return CHAMPIONS_DATA.filter(item => matchesFilter(item) && !excludedSet.has(item.id));
+      return getCurrentRawData().filter(item => !excludedSet.has(item.id));
+    }
+
+    function describeFilter(base) {
+      const f = F();
+      const parts = [];
+      if (f.gens.size) parts.push([...f.gens].sort((a, b) => a - b).join('·') + '세대');
+      if (f.types.size) {
+        parts.push(TYPE_DATA.filter(t => f.types.has(TYPE_CODE[t.id])).map(t => t.name).join('·') + ' 타입');
+      }
+      return parts.length ? `${base} (${parts.join(', ')})` : base;
+    }
+
+    function filterChipClass(on) {
+      return 'chip px-2.5 py-1 rounded-lg text-xs font-bold border transition-colors ' +
+        (on ? 'bg-indigo-600 border-indigo-400 text-white' : 'bg-slate-800/80 border-slate-700 text-slate-300');
+    }
+
+    function refreshAfterFilter() {
+      renderFilterChips();
+      if (currentCategory === 'champ') renderChips();
+      drawCanvas();
+    }
+
+    function renderFilterChips() {
+      const f = F();
+      const gc = document.getElementById('filterGenChips');
+      const tc = document.getElementById('filterTypeChips');
+      gc.innerHTML = '';
+      tc.innerHTML = '';
+
+      for (let g = 1; g <= 9; g++) {
+        const b = document.createElement('button');
+        b.className = filterChipClass(f.gens.has(g));
+        b.textContent = `${g}세대`;
+        b.onclick = () => {
+          if (isSpinning) return;
+          if (f.gens.has(g)) f.gens.delete(g); else f.gens.add(g);
+          refreshAfterFilter();
+        };
+        gc.appendChild(b);
+      }
+
+      TYPE_DATA.forEach(t => {
+        const code = TYPE_CODE[t.id];
+        const b = document.createElement('button');
+        b.className = filterChipClass(f.types.has(code)) + ' flex items-center space-x-1';
+        b.innerHTML = `<span class="w-2 h-2 rounded-full inline-block" style="background-color: ${t.color}"></span><span>${t.name}</span>`;
+        b.onclick = () => {
+          if (isSpinning) return;
+          if (f.types.has(code)) f.types.delete(code); else f.types.add(code);
+          refreshAfterFilter();
+        };
+        tc.appendChild(b);
+      });
+
+      document.getElementById('filterFormsToggle').checked = f.forms;
+      document.getElementById('filterCount').innerText = `뽑기 대상: ${getActiveItems().length}마리`;
+    }
+
+    function resetFilters() {
+      if (isSpinning) return;
+      const f = F();
+      f.gens = new Set();
+      f.types = new Set();
+      f.forms = true;
+      refreshAfterFilter();
+    }
+
+    function toggleForms() {
+      if (isSpinning) { renderFilterChips(); return; }
+      F().forms = document.getElementById('filterFormsToggle').checked;
+      refreshAfterFilter();
+    }
+
+    // 세대/타입 룰렛 결과 -> 그 세대/타입에서 (전체 또는 포챔스) 포켓몬 뽑기로 이어가기
+    function startChallengeFromResult(target) {
+      if (!lastPick || isSpinning) return;
+      closeModal();
+      if (target === 'champ') {
+        CHAMPIONS_DATA.forEach(c => excludedSet.delete(c.id)); // 새 챌린지: 포챔스 제외 목록 초기화
+      }
+      setCategory(target);
+      const f = filterStore[target];
+      f.gens = new Set();
+      f.types = new Set();
+      f.forms = true;
+      if (lastPick.cat === 'gen') {
+        f.gens.add(parseInt(lastPick.id.replace('gen', ''), 10));
+      } else if (TYPE_CODE[lastPick.id]) {
+        f.types.add(TYPE_CODE[lastPick.id]);
+      }
+      refreshAfterFilter();
+    }
+
+    function updateCustomItems() {
+      for (let i = 0; i < 4; i++) {
+        const val = document.getElementById(`custom-${i}`).value.trim();
+        customData[i].name = val || `옵션 ${String.fromCharCode(65 + i)}`;
+      }
+      if (currentCategory === 'custom') {
+        renderChips();
+        drawCanvas();
+      }
+    }
+
+    function setCategory(cat) {
+      if (isSpinning) return;
+      currentCategory = cat;
+
+      const tabs = {
+        gen: document.getElementById('tab-gen'),
+        type: document.getElementById('tab-type'),
+        all: document.getElementById('tab-all'),
+        champ: document.getElementById('tab-champ'),
+        custom: document.getElementById('tab-custom')
+      };
+      const customInputsCard = document.getElementById('customInputsCard');
+      const itemControlCard = document.getElementById('itemControlCard');
+      const gameModeSelector = document.getElementById('gameModeSelector');
+
+      Object.values(tabs).forEach(btn => {
+        btn.className = "flex-1 py-2 px-3 rounded-xl transition-all text-slate-400 hover:text-white whitespace-nowrap";
+      });
+      tabs[cat].className = "flex-1 py-2 px-3 rounded-xl transition-all text-white bg-indigo-600 shadow-lg whitespace-nowrap";
+
+      gameModeSelector.style.display = 'grid';
+
+      if (cat === 'all' || cat === 'champ') {
+        // 항목이 많아서 룰렛/몬스터볼은 숨기고 대포, 슬롯머신만 사용
+        gameModeSelector.style.gridTemplateColumns = 'repeat(2, minmax(0, 1fr))';
+        document.getElementById('mode-roulette').style.display = 'none';
+        document.getElementById('mode-pokeball').style.display = 'none';
+        customInputsCard.classList.add('hidden');
+        // 전체는 칩 관리 숨김, 포챔스는 자동 제외/칩 관리를 위해 표시
+        if (cat === 'all') itemControlCard.classList.add('hidden');
+        else itemControlCard.classList.remove('hidden');
+        setGameMode('slot');
+      } else {
+        gameModeSelector.style.gridTemplateColumns = 'repeat(4, minmax(0, 1fr))';
+        document.getElementById('mode-roulette').style.display = 'block';
+        document.getElementById('mode-pokeball').style.display = 'block';
+        itemControlCard.classList.remove('hidden');
+        if (cat === 'custom') customInputsCard.classList.remove('hidden');
+        else customInputsCard.classList.add('hidden');
+        setGameMode('roulette');
+      }
+
+      document.getElementById('filterCard').classList.toggle('hidden', cat !== 'all' && cat !== 'champ');
+      if (cat === 'all' || cat === 'champ') renderFilterChips();
+
+      renderChips();
+      drawCanvas();
+    }
+
+    function setGameMode(mode) {
+      if (isSpinning) return;
+      currentGameMode = mode;
+
+      ['roulette', 'cannon', 'slot', 'pokeball'].forEach(m => {
+        const btn = document.getElementById(`mode-${m}`);
+        if (btn) {
+          if (m === mode) {
+            btn.className = "switch-card p-3 rounded-2xl text-center btn-pop border-2 border-indigo-500 bg-indigo-950/40 opacity-100";
+          } else {
+            btn.className = "switch-card p-3 rounded-2xl text-center btn-pop opacity-60";
+          }
+        }
+      });
+
+      const instruction = document.getElementById('gameInstruction');
+      if (mode === 'pokeball') {
+        instruction.classList.remove('hidden');
+      } else {
+        instruction.classList.add('hidden');
+      }
+
+      drawCanvas();
+    }
+
+    function renderChips() {
+      const container = document.getElementById('chipContainer');
+      container.innerHTML = '';
+      if (currentCategory === 'all') return;
+
+      const items = currentCategory === 'champ' ? CHAMPIONS_DATA.filter(matchesFilter) : getCurrentRawData();
+      items.forEach(item => {
+        const isExcluded = excludedSet.has(item.id);
+        const chip = document.createElement('div');
+        chip.className = `chip px-3 py-1.5 rounded-xl text-xs font-bold border flex items-center space-x-1.5 ${isExcluded ? 'excluded bg-slate-900/40 border-slate-800 text-slate-500' : 'bg-slate-800/80 border-slate-700 text-slate-200'}`;
+
+        chip.innerHTML = `
+          <span class="w-2.5 h-2.5 rounded-full inline-block" style="background-color: ${item.color}"></span>
+          <span>${item.name}</span>
+        `;
+
+        chip.onclick = () => {
+          if (isSpinning) return;
+          if (excludedSet.has(item.id)) {
+            excludedSet.delete(item.id);
+          } else {
+            if (getActiveItems().length <= 1) {
+              alert('최소 1개 이상의 항목은 남겨두어야 합니다!');
+              return;
+            }
+            excludedSet.add(item.id);
+          }
+          renderChips();
+          drawCanvas();
+        };
+
+        container.appendChild(chip);
+      });
+    }
+
+    function resetCurrentCategory() {
+      if (isSpinning) return;
+      const items = getCurrentRawData();
+      items.forEach(i => excludedSet.delete(i.id));
+      renderChips();
+      drawCanvas();
+    }
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    let rouletteAngle = 0;
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const items = getActiveItems();
+
+      if (items.length === 0) {
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = 'bold 16px Noto Sans KR';
+        ctx.textAlign = 'center';
+        ctx.fillText('선택된 항목이 없습니다', canvas.width / 2, canvas.height / 2);
+        return;
+      }
+
+      if (currentGameMode === 'roulette') {
+        drawRouletteWheel(items);
+      } else if (currentGameMode === 'cannon') {
+        drawCannonScene();
+      } else if (currentGameMode === 'slot') {
+        drawSlotMachineScene(items);
+      } else if (currentGameMode === 'pokeball') {
+        drawPokeballScene();
+      }
+    }
+
+    function drawRouletteWheel(items) {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = 145;
+      const arc = (Math.PI * 2) / items.length;
+
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(rouletteAngle);
+
+      for (let i = 0; i < items.length; i++) {
+        const angle = i * arc;
+        ctx.beginPath();
+        ctx.fillStyle = items[i].color;
+        ctx.moveTo(0, 0);
+        ctx.arc(0, 0, radius, angle, angle + arc);
+        ctx.lineTo(0, 0);
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(15, 23, 42, 0.5)';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 13px Noto Sans KR';
+        ctx.shadowColor = 'rgba(0,0,0,0.6)';
+        ctx.shadowBlur = 4;
+        ctx.fillText(items[i].name, radius - 15, 5);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 22, 0, Math.PI * 2);
+      ctx.fillStyle = '#0F172A';
+      ctx.fill();
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(centerX - 12, 18);
+      ctx.lineTo(centerX + 12, 18);
+      ctx.lineTo(centerX, 42);
+      ctx.closePath();
+      ctx.fillStyle = '#EF4444';
+      ctx.fill();
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+
+    function drawSlotMachineScene(items, slotText = '?') {
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      ctx.fillStyle = '#1E293B';
+      ctx.fillRect(centerX - 140, centerY - 70, 280, 140);
+      ctx.strokeStyle = '#F59E0B';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(centerX - 140, centerY - 70, 280, 140);
+
+      ctx.fillStyle = '#0F172A';
+      ctx.fillRect(centerX - 125, centerY - 50, 250, 100);
+
+      ctx.fillStyle = '#FCE7F3';
+      ctx.font = 'bold 18px Jua';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(slotText, centerX, centerY);
+    }
+
+
+    // ================= 공통 유틸 =================
+    function makeParticle(x, y, angle, speed, color, size, life, gravity) {
+      return { x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, color, size, life, max: life, g: gravity || 0 };
+    }
+
+    function stepParticles(parts, dt) {
+      for (let i = parts.length - 1; i >= 0; i--) {
+        const p = parts[i];
+        p.x += p.vx * dt;
+        p.y += p.vy * dt;
+        p.vy += p.g * dt;
+        p.life -= dt;
+        if (p.life <= 0) { parts.splice(i, 1); continue; }
+        const k = p.life / p.max;
+        ctx.globalAlpha = Math.max(0, k);
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * (0.5 + 0.5 * k), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function easeOutBack(x) {
+      const c1 = 1.70158, c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    }
+
+    function drawRevealText(text, x, y, scale) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(scale, scale);
+      let size = 26;
+      ctx.font = `bold ${size}px Jua`;
+      while (ctx.measureText(text).width > 290 && size > 12) {
+        size--;
+        ctx.font = `bold ${size}px Jua`;
+      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 6;
+      ctx.strokeStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.strokeText(text, 0, 0);
+      ctx.fillStyle = '#FDE68A';
+      ctx.fillText(text, 0, 0);
+      ctx.restore();
+    }
+
+    function drawHint(text, y, pulse) {
+      ctx.save();
+      ctx.globalAlpha = pulse ? 0.6 + 0.4 * Math.sin(performance.now() / 200) : 1;
+      ctx.font = 'bold 15px Noto Sans KR';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#CBD5E1';
+      ctx.fillText(text, canvas.width / 2, y);
+      ctx.restore();
+    }
+
+    // ================= 시크릿 대포 =================
+    // ---- 대포 그래픽 보조 함수 ----
+    function cannonRoundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+    }
+
+    function cannonBrassGradient() {
+      const g = ctx.createLinearGradient(-40, 0, 40, 0);
+      g.addColorStop(0, '#713F12');
+      g.addColorStop(0.3, '#FCD34D');
+      g.addColorStop(0.55, '#D97706');
+      g.addColorStop(1, '#713F12');
+      return g;
+    }
+
+    function drawCannonWheel(x, y, r) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // 철제 테
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      ctx.fillStyle = '#111827';
+      ctx.fill();
+
+      // 나무 테
+      const wg = ctx.createRadialGradient(-r * 0.3, -r * 0.3, 2, 0, 0, r);
+      wg.addColorStop(0, '#B8742F');
+      wg.addColorStop(1, '#5B3417');
+      ctx.beginPath();
+      ctx.arc(0, 0, r - 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = wg;
+      ctx.fill();
+
+      // 살 사이 어두운 면
+      ctx.beginPath();
+      ctx.arc(0, 0, r - 8.5, 0, Math.PI * 2);
+      ctx.fillStyle = '#24150A';
+      ctx.fill();
+
+      // 바퀴살
+      ctx.strokeStyle = '#A0662B';
+      ctx.lineWidth = 4;
+      ctx.lineCap = 'round';
+      for (let i = 0; i < 8; i++) {
+        const a = i * Math.PI / 4 + 0.2;
+        ctx.beginPath();
+        ctx.moveTo(Math.cos(a) * 5, Math.sin(a) * 5);
+        ctx.lineTo(Math.cos(a) * (r - 8), Math.sin(a) * (r - 8));
+        ctx.stroke();
+      }
+
+      // 철 테 하이라이트
+      ctx.strokeStyle = 'rgba(203, 213, 225, 0.6)';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(0, 0, r - 1, Math.PI * 1.1, Math.PI * 1.65);
+      ctx.stroke();
+
+      // 황동 허브
+      const hg = ctx.createRadialGradient(-2, -2, 1, 0, 0, 8);
+      hg.addColorStop(0, '#FEF3C7');
+      hg.addColorStop(0.5, '#D97706');
+      hg.addColorStop(1, '#78350F');
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI * 2);
+      ctx.fillStyle = hg;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#451A03';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(0, 0, 2, 0, Math.PI * 2);
+      ctx.fillStyle = '#1F1308';
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawCannon(cx, baseY, shakeX, shakeY, recoil, glow) {
+      ctx.save();
+      ctx.translate(cx + shakeX, baseY + shakeY);
+      ctx.lineJoin = 'round';
+
+      // 바닥 그림자
+      ctx.save();
+      ctx.translate(0, 40);
+      ctx.scale(1, 0.16);
+      const sg2 = ctx.createRadialGradient(0, 0, 4, 0, 0, 100);
+      sg2.addColorStop(0, 'rgba(0, 0, 0, 0.5)');
+      sg2.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      ctx.fillStyle = sg2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 100, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // ===== 포신 (반동으로 아래로 밀림) =====
+      ctx.save();
+      ctx.translate(0, recoil);
+
+      const bw0 = 32, bw1 = 25; // 아래/위 반폭
+      const halfAt = y => bw0 + (bw1 - bw0) * ((14 - y) / 102);
+
+      // 본체
+      const mg = ctx.createLinearGradient(-bw0, 0, bw0, 0);
+      mg.addColorStop(0, '#0B1220');
+      mg.addColorStop(0.18, '#334155');
+      mg.addColorStop(0.36, '#A8B6C8');
+      mg.addColorStop(0.5, '#64748B');
+      mg.addColorStop(0.82, '#1E293B');
+      mg.addColorStop(1, '#0B1220');
+      ctx.beginPath();
+      ctx.moveTo(-bw0, 14);
+      ctx.lineTo(-bw1, -88);
+      ctx.lineTo(bw1, -88);
+      ctx.lineTo(bw0, 14);
+      ctx.closePath();
+      ctx.fillStyle = mg;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0B1220';
+      ctx.stroke();
+
+      // 반사광
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.28)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(-halfAt(8) * 0.42, 8);
+      ctx.lineTo(-halfAt(-80) * 0.42, -80);
+      ctx.stroke();
+
+      // 황동 띠 + 리벳
+      [-72, -28].forEach(y => {
+        const hw = halfAt(y) + 3;
+        cannonRoundRect(-hw, y - 5, hw * 2, 10, 3);
+        ctx.fillStyle = cannonBrassGradient();
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#451A03';
+        ctx.stroke();
+        [-0.72, -0.26, 0.26, 0.72].forEach(k => {
+          ctx.beginPath();
+          ctx.arc(k * hw, y, 1.8, 0, Math.PI * 2);
+          ctx.fillStyle = '#FEF3C7';
+          ctx.fill();
+        });
+      });
+
+      // 중앙 메달 ("?")
+      const eg = ctx.createRadialGradient(-3, -53, 1, 0, -50, 12);
+      eg.addColorStop(0, '#FEF3C7');
+      eg.addColorStop(0.5, '#F59E0B');
+      eg.addColorStop(1, '#78350F');
+      ctx.beginPath();
+      ctx.arc(0, -50, 11, 0, Math.PI * 2);
+      ctx.fillStyle = eg;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#451A03';
+      ctx.stroke();
+      ctx.font = 'bold 15px Jua';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#451A03';
+      ctx.fillText('?', 0, -49);
+      ctx.textBaseline = 'alphabetic';
+
+      // 도화선 (오른쪽 옆)
+      ctx.strokeStyle = '#D6C7A1';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(halfAt(-14) - 1, -14);
+      ctx.quadraticCurveTo(halfAt(-14) + 14, -18, halfAt(-14) + 12, -34);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(halfAt(-14) + 12, -35, 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = '#F97316';
+      ctx.fill();
+
+      // 포구 (링 + 윗면 + 구멍)
+      const rg0 = ctx.createLinearGradient(-34, 0, 34, 0);
+      rg0.addColorStop(0, '#1E293B');
+      rg0.addColorStop(0.3, '#94A3B8');
+      rg0.addColorStop(0.55, '#475569');
+      rg0.addColorStop(1, '#0F172A');
+      cannonRoundRect(-34, -102, 68, 16, 4);
+      ctx.fillStyle = rg0;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#0B1220';
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(0, -102, 34, 7, 0, 0, Math.PI * 2);
+      const tg = ctx.createLinearGradient(-34, 0, 34, 0);
+      tg.addColorStop(0, '#334155');
+      tg.addColorStop(0.35, '#CBD5E1');
+      tg.addColorStop(1, '#334155');
+      ctx.fillStyle = tg;
+      ctx.fill();
+      ctx.stroke();
+
+      const bg = ctx.createRadialGradient(0, -102, 1, 0, -102, 22);
+      bg.addColorStop(0, '#000000');
+      bg.addColorStop(0.7, '#0B1220');
+      bg.addColorStop(1, '#1E293B');
+      ctx.beginPath();
+      ctx.ellipse(0, -102, 22, 5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = bg;
+      ctx.fill();
+
+      // 포구 열기
+      if (glow > 0) {
+        const gr = ctx.createRadialGradient(0, -102, 2, 0, -102, 12 + glow * 38);
+        gr.addColorStop(0, `rgba(251, 191, 36, ${0.9 * glow})`);
+        gr.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        ctx.fillStyle = gr;
+        ctx.beginPath();
+        ctx.arc(0, -102, 12 + glow * 38, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // ===== 포가 (나무 받침) =====
+      const cg = ctx.createLinearGradient(0, -6, 0, 34);
+      cg.addColorStop(0, '#9A6430');
+      cg.addColorStop(1, '#4A2A12');
+      ctx.beginPath();
+      ctx.moveTo(-40, -6);
+      ctx.lineTo(40, -6);
+      ctx.lineTo(54, 34);
+      ctx.lineTo(-54, 34);
+      ctx.closePath();
+      ctx.fillStyle = cg;
+      ctx.fill();
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#24150A';
+      ctx.stroke();
+
+      // 널빤지 결
+      ctx.strokeStyle = 'rgba(36, 21, 10, 0.55)';
+      ctx.lineWidth = 1.4;
+      [-27, -9, 9, 27].forEach(x => {
+        ctx.beginPath();
+        ctx.moveTo(x, -6);
+        ctx.lineTo(x * 54 / 40, 34);
+        ctx.stroke();
+      });
+      ctx.strokeStyle = 'rgba(255, 220, 170, 0.18)';
+      ctx.beginPath();
+      ctx.moveTo(-36, -1);
+      ctx.lineTo(36, -1);
+      ctx.stroke();
+
+      // 상단 철띠 + 리벳
+      const ig = ctx.createLinearGradient(0, -10, 0, 0);
+      ig.addColorStop(0, '#94A3B8');
+      ig.addColorStop(1, '#334155');
+      cannonRoundRect(-43, -10, 86, 9, 3);
+      ctx.fillStyle = ig;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#0B1220';
+      ctx.stroke();
+      [-34, -17, 0, 17, 34].forEach(x => {
+        ctx.beginPath();
+        ctx.arc(x, -5.5, 1.7, 0, Math.PI * 2);
+        ctx.fillStyle = '#E2E8F0';
+        ctx.fill();
+      });
+
+      // 포이 축(트러니언) 황동 원판
+      [-36, 36].forEach(x => {
+        const tg2 = ctx.createRadialGradient(x - 2, -7, 1, x, -5, 8);
+        tg2.addColorStop(0, '#FEF3C7');
+        tg2.addColorStop(0.5, '#D97706');
+        tg2.addColorStop(1, '#78350F');
+        ctx.beginPath();
+        ctx.arc(x, -5, 6.5, 0, Math.PI * 2);
+        ctx.fillStyle = tg2;
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#451A03';
+        ctx.stroke();
+      });
+
+      // ===== 바퀴 =====
+      drawCannonWheel(-50, 17, 24);
+      drawCannonWheel(50, 17, 24);
+
+      ctx.restore();
+    }
+
+    // ---- 포병 캐릭터 (왼쪽 대포를 바라봄) ----
+    function drawFlame(fx, fy, t, size) {
+      const fl = 1 + Math.sin(t / 45) * 0.12 + Math.sin(t / 70) * 0.08;
+      const s = size * fl;
+      const g = ctx.createRadialGradient(fx, fy, 1, fx, fy, 16 * s);
+      g.addColorStop(0, 'rgba(255, 220, 120, 0.55)');
+      g.addColorStop(1, 'rgba(255, 140, 40, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(fx, fy, 16 * s, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - 12 * s);
+      ctx.quadraticCurveTo(fx + 7 * s, fy - 2 * s, fx, fy + 5 * s);
+      ctx.quadraticCurveTo(fx - 7 * s, fy - 2 * s, fx, fy - 12 * s);
+      ctx.fillStyle = '#F97316';
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.moveTo(fx, fy - 6 * s);
+      ctx.quadraticCurveTo(fx + 3.5 * s, fy, fx, fy + 4 * s);
+      ctx.quadraticCurveTo(fx - 3.5 * s, fy, fx, fy - 6 * s);
+      ctx.fillStyle = '#FDE047';
+      ctx.fill();
+    }
+
+    // mode: 'idle'(횃불 들고 대기) | 'light'(도화선 점화) | 'fire'(귀 막고 뒤로 물러남) | 'cheer'(만세)
+    function drawGunner(x, gy, mode, t, opts) {
+      opts = opts || {};
+      const hop = opts.hop || 0;
+      const walk = opts.walk || 0;
+      const SLEEVE = '#1E40AF', COAT = '#1E3A8A', SKIN = '#F5C9A0';
+
+      ctx.save();
+      ctx.translate(x, gy);
+
+      // 그림자
+      ctx.beginPath();
+      ctx.ellipse(0, 2, Math.max(8, 20 - hop * 0.5), 5, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+      ctx.fill();
+
+      ctx.translate(0, -hop);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      const arm = (sx, sy, hx, hy) => {
+        ctx.strokeStyle = SLEEVE;
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(hx, hy);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(hx, hy, 4.3, 0, Math.PI * 2);
+        ctx.fillStyle = SKIN;
+        ctx.fill();
+        ctx.strokeStyle = '#8A5A2B';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      };
+
+      // 뒤쪽 팔
+      if (mode === 'idle' || mode === 'light') arm(7, -46, 10, -29);
+
+      // 다리 + 장화
+      [-1, 1].forEach(s => {
+        const sw = Math.sin(walk + (s > 0 ? Math.PI : 0)) * 6;
+        ctx.strokeStyle = '#1F2937';
+        ctx.lineWidth = 8;
+        ctx.beginPath();
+        ctx.moveTo(s * 5, -20);
+        ctx.lineTo(s * 5 + sw, -4);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.ellipse(s * 5 + sw - 3, -2, 7, 4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#0B1220';
+        ctx.fill();
+      });
+
+      // 몸통 (군복)
+      const bg = ctx.createLinearGradient(-13, 0, 13, 0);
+      bg.addColorStop(0, '#2547A8');
+      bg.addColorStop(0.5, COAT);
+      bg.addColorStop(1, '#14275E');
+      cannonRoundRect(-13, -52, 26, 34, 6);
+      ctx.fillStyle = bg;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#0B1B4A';
+      ctx.stroke();
+
+      // 어깨띠, 허리띠, 단추
+      ctx.strokeStyle = 'rgba(248, 250, 252, 0.9)';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(-11, -49);
+      ctx.lineTo(11, -24);
+      ctx.stroke();
+      ctx.fillStyle = '#5B3417';
+      ctx.fillRect(-13, -26, 26, 5);
+      ctx.fillStyle = '#FBBF24';
+      ctx.fillRect(-3, -27, 6, 7);
+      [-46, -39, -32].forEach(by => {
+        ctx.beginPath();
+        ctx.arc(-5, by, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // 머리
+      ctx.save();
+      ctx.translate(-1, -64);
+      const fg = ctx.createRadialGradient(-3, -3, 1, 0, 0, 12);
+      fg.addColorStop(0, '#FFE0BD');
+      fg.addColorStop(1, SKIN);
+      ctx.beginPath();
+      ctx.arc(0, 0, 11, 0, Math.PI * 2);
+      ctx.fillStyle = fg;
+      ctx.fill();
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#8A5A2B';
+      ctx.stroke();
+
+      // 볼터치
+      ctx.fillStyle = 'rgba(244, 114, 128, 0.45)';
+      ctx.beginPath();
+      ctx.arc(-8, 3, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(5, 3, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 눈
+      ctx.strokeStyle = '#111827';
+      ctx.fillStyle = '#111827';
+      ctx.lineWidth = 1.8;
+      if (mode === 'fire') {
+        ctx.beginPath();
+        ctx.moveTo(-8, -3); ctx.lineTo(-4, -1); ctx.lineTo(-8, 1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(4, -3); ctx.lineTo(0, -1); ctx.lineTo(4, 1);
+        ctx.stroke();
+      } else if (mode === 'cheer') {
+        ctx.beginPath();
+        ctx.arc(-5, 1, 2.6, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(2, 1, 2.6, Math.PI * 1.1, Math.PI * 1.9);
+        ctx.stroke();
+      } else {
+        ctx.beginPath();
+        ctx.arc(-5, -1, 1.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(2, -1, 1.9, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#FFFFFF';
+        ctx.beginPath();
+        ctx.arc(-5.6, -1.7, 0.7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(1.4, -1.7, 0.7, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 콧수염 + 입
+      ctx.fillStyle = '#6B3F1D';
+      ctx.beginPath();
+      ctx.ellipse(-4, 5, 4.5, 1.8, -0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(2, 5, 4.5, 1.8, 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      if (mode === 'fire') {
+        ctx.beginPath();
+        ctx.ellipse(-1, 8.5, 2.6, 2.8, 0, 0, Math.PI * 2);
+        ctx.fillStyle = '#7F1D1D';
+        ctx.fill();
+      } else if (mode === 'cheer') {
+        ctx.strokeStyle = '#7F1D1D';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(-1, 6.5, 4.5, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      } else {
+        ctx.strokeStyle = '#7F1D1D';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(-1, 7.5, 2.4, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+
+      // 모자
+      const hg = ctx.createLinearGradient(-11, 0, 11, 0);
+      hg.addColorStop(0, '#1B2F72');
+      hg.addColorStop(0.4, '#3B5BC6');
+      hg.addColorStop(1, '#14275E');
+      cannonRoundRect(-11, -26, 22, 17, 3);
+      ctx.fillStyle = hg;
+      ctx.fill();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#0B1B4A';
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.ellipse(-3, -9, 14, 3.2, 0, 0, Math.PI * 2);
+      ctx.fillStyle = '#0F1E4D';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(-3, -17, 3.2, 0, Math.PI * 2);
+      ctx.fillStyle = '#FBBF24';
+      ctx.fill();
+      ctx.beginPath();
+      ctx.ellipse(3, -30, 3, 6, 0.35, 0, Math.PI * 2);
+      ctx.fillStyle = '#EF4444';
+      ctx.fill();
+      ctx.restore(); // 머리
+
+      // 앞쪽 팔 / 도구
+      if (mode === 'idle') {
+        ctx.strokeStyle = '#6B4423';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(-16, -35);
+        ctx.lineTo(-16, -54);
+        ctx.stroke();
+        arm(-7, -46, -16, -35);
+        drawFlame(-16, -58, t, 0.8);
+      } else if (mode === 'light' && opts.tip) {
+        const tx = opts.tip.x - x;
+        const ty = opts.tip.y - gy + hop;
+        ctx.strokeStyle = '#6B4423';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(tx + 14, ty + 8);
+        ctx.lineTo(tx, ty);
+        ctx.stroke();
+        arm(-7, -46, tx + 14, ty + 8);
+        drawFlame(tx - 1, ty - 2, t, 0.7);
+      } else if (mode === 'fire') {
+        arm(-7, -46, -13, -62);
+        arm(7, -46, 11, -62);
+      } else if (mode === 'cheer') {
+        const wv = Math.sin(t / 90) * 3;
+        arm(-7, -46, -20 + wv, -80);
+        arm(7, -46, 18 - wv, -80);
+      }
+
+      ctx.restore();
+    }
+
+    function drawCannonScene() {
+      drawCannon(canvas.width / 2, 250, 0, 0, 0, 0);
+      drawGunner(266, 288, 'idle', Date.now(), {});
+    }
+
+    function runCannonAnimation(winner) {
+      const cx = canvas.width / 2, baseY = 250, muzzleY = baseY - 102;
+      const T_CHARGE = 1500, T_FLY = 450, T_END = 3700;
+      const parts = [];
+      let start = null, last = 0, lastTick = 0;
+      let fired = false, exploded = false, tFire = 0, tBoom = 0, flash = 0;
+
+      function frame(ts) {
+        if (!start) { start = ts; last = ts; }
+        const t = ts - start;
+        const dt = Math.min((ts - last) / 16.67, 3);
+        last = ts;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        let sx = 0, sy = 0, shakeX = 0, shakeY = 0, recoil = 0, glow = 0;
+
+        if (t < T_CHARGE) {
+          // 1) 충전
+          const p = t / T_CHARGE;
+          shakeX = (Math.random() - 0.5) * (1 + p * 6);
+          shakeY = (Math.random() - 0.5) * (1 + p * 3);
+          glow = p;
+          if (Math.random() < 0.25 + p * 0.6) {
+            parts.push(makeParticle(cx, muzzleY - 6, -Math.PI / 2 + (Math.random() - 0.5) * 1.4, 1 + Math.random() * 2.5, '#FBBF24', 2.5, 22, 0.08));
+          }
+          if (t - lastTick > 300 - p * 200) { playSound('tick'); lastTick = t; }
+        } else if (!fired) {
+          // 2) 발사
+          fired = true;
+          tFire = t;
+          flash = 1;
+          playSound('boom');
+          for (let i = 0; i < 26; i++) {
+            parts.push(makeParticle(cx, muzzleY, -Math.PI / 2 + (Math.random() - 0.5) * 1.2, 1 + Math.random() * 4, '#CBD5E1', 8 + Math.random() * 8, 55, -0.02));
+          }
+        }
+
+        if (fired) {
+          const since = t - tFire;
+          const decay = Math.max(0, 1 - since / 450);
+          sx = (Math.random() - 0.5) * 14 * decay;
+          sy = (Math.random() - 0.5) * 14 * decay;
+          recoil = Math.max(0, 1 - since / 320) * 20;
+        }
+
+        ctx.save();
+        ctx.translate(sx, sy);
+
+        drawCannon(cx, baseY, shakeX, shakeY, recoil, glow);
+
+        // 포병: 달려와서 도화선 점화 -> 귀 막고 물러남 -> 만세
+        const gGround = baseY + 38, tipX = cx + 42, tipY = baseY - 35 + recoil;
+        const T_WALK = 350;
+        if (t < T_WALK) {
+          const wp = t / T_WALK;
+          drawGunner(258 + (1 - wp) * (1 - wp) * 110, gGround, 'idle', ts, { walk: t / 55 });
+        } else if (!fired) {
+          drawGunner(258, gGround, 'light', ts, { tip: { x: tipX, y: tipY } });
+          if (Math.random() < 0.7) {
+            parts.push(makeParticle(tipX, tipY - 3, -Math.PI / 2 + (Math.random() - 0.5) * 2, 0.8 + Math.random() * 1.8, '#FDE68A', 1.8, 16, 0.08));
+          }
+        } else if (!exploded) {
+          const gs = t - tFire;
+          const gk = Math.min(gs / 250, 1);
+          const ghop = gs < 400 ? Math.abs(Math.sin(gs / 400 * Math.PI)) * 14 : 0;
+          drawGunner(258 + 22 * (1 - Math.pow(1 - gk, 2)), gGround, 'fire', ts, { hop: ghop });
+        } else {
+          drawGunner(280, gGround, 'cheer', ts, { hop: Math.abs(Math.sin((t - tBoom) / 130)) * 8 });
+        }
+
+        // 3) 포탄 비행
+        if (fired && !exploded) {
+          const p = Math.min((t - tFire) / T_FLY, 1);
+          const e = 1 - Math.pow(1 - p, 2);
+          const by = muzzleY - (muzzleY - 85) * e;
+          parts.push(makeParticle(cx + (Math.random() - 0.5) * 6, by + 8, Math.PI / 2, 0.5, '#F59E0B', 5, 14, 0));
+          ctx.fillStyle = '#0F172A';
+          ctx.strokeStyle = '#F8FAFC';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.arc(cx, by, 10, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+
+          if (p >= 1) {
+            // 4) 폭발
+            exploded = true;
+            tBoom = t;
+            playSound('win');
+            const colors = [winner.color, '#FFFFFF', '#FBBF24'];
+            for (let i = 0; i < 80; i++) {
+              parts.push(makeParticle(cx, 85, Math.random() * Math.PI * 2, 2 + Math.random() * 6, colors[i % 3], 3 + Math.random() * 3, 40 + Math.random() * 30, 0.12));
+            }
+          }
+        }
+
+        stepParticles(parts, dt);
+
+        // 발사 섬광
+        if (flash > 0) {
+          const rg = ctx.createRadialGradient(cx, muzzleY, 0, cx, muzzleY, 90);
+          rg.addColorStop(0, `rgba(255, 255, 255, ${flash})`);
+          rg.addColorStop(1, 'rgba(255, 200, 80, 0)');
+          ctx.fillStyle = rg;
+          ctx.beginPath();
+          ctx.arc(cx, muzzleY, 90, 0, Math.PI * 2);
+          ctx.fill();
+          flash -= 0.08 * dt;
+        }
+
+        // 폭발 링 + 결과 이름
+        if (exploded) {
+          const since = t - tBoom;
+          const rp = Math.min(since / 450, 1);
+          ctx.globalAlpha = 1 - rp;
+          ctx.strokeStyle = winner.color;
+          ctx.lineWidth = 8 * (1 - rp) + 1;
+          ctx.beginPath();
+          ctx.arc(cx, 85, 15 + rp * 110, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          drawRevealText(winner.name, cx, 85, easeOutBack(Math.min(since / 450, 1)));
+        }
+
+        ctx.restore();
+
+        if (t >= T_END) {
+          finishSpin(winner);
+          return;
+        }
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ================= 몬스터볼 Pick =================
+    function drawBall(x, y, r, angle, open, alpha) {
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#0F172A';
+
+      // 아래 반쪽
+      ctx.beginPath();
+      ctx.arc(0, 0, r, 0, Math.PI, false);
+      ctx.closePath();
+      ctx.fillStyle = '#F8FAFC';
+      ctx.fill();
+      ctx.stroke();
+
+      // 위 뚜껑 (열리면 위로 올라감)
+      ctx.save();
+      ctx.translate(0, -open * r * 0.7);
+      ctx.beginPath();
+      ctx.arc(0, 0, r, Math.PI, Math.PI * 2, false);
+      ctx.closePath();
+      ctx.fillStyle = '#EF4444';
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+
+      // 버튼
+      if (open < 0.05) {
+        ctx.beginPath();
+        ctx.arc(0, 0, r * 0.28, 0, Math.PI * 2);
+        ctx.fillStyle = '#F8FAFC';
+        ctx.fill();
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    function drawBurst(x, y, p) {
+      const R = 30 + p * 170;
+      const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+      g.addColorStop(0, `rgba(255, 255, 255, ${1 - p})`);
+      g.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(x, y, R, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawPokeballScene() {
+      [65, 170, 275].forEach(x => drawBall(x, 185, 36, 0, 0, 1));
+    }
+
+    // 캔버스 클릭 처리 (몬스터볼 고르기)
+    let pokeballClickHandler = null;
+    canvas.addEventListener('click', (e) => {
+      if (!pokeballClickHandler) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = (e.clientX - rect.left) * (canvas.width / rect.width);
+      const my = (e.clientY - rect.top) * (canvas.height / rect.height);
+      pokeballClickHandler(mx, my);
+    });
+
+    function runPokeballAnimation(ballIdx, winner) {
+      const baseX = [65, 170, 275], cy = 185, r = 36;
+      const balls = baseX.map(x => ({ x, y: cy, angle: 0, open: 0, alpha: 1 }));
+      const slotOf = [0, 1, 2];
+      const swaps = [];
+      for (let i = 0; i < 8; i++) {
+        const a = Math.floor(Math.random() * 3);
+        const b = (a + 1 + Math.floor(Math.random() * 2)) % 3;
+        swaps.push([a, b]);
+      }
+      const T_INTRO = 500, T_SWAP = 280;
+      const ballInSlot = s => slotOf.indexOf(s);
+
+      let phase = 'shuffle'; // shuffle -> pick -> shake -> open -> reveal
+      let start = null, last = 0, tPhase = 0, curTs = 0;
+      let applied = 0, lastSwapIdx = -1, chosen = -1, chosenX0 = 0, shakeCount = 0;
+      const parts = [];
+
+      pokeballClickHandler = (mx, my) => {
+        if (phase !== 'pick') return;
+        for (let i = 0; i < 3; i++) {
+          if (Math.hypot(mx - balls[i].x, my - balls[i].y) <= r + 10) {
+            chosen = i;
+            chosenX0 = balls[i].x;
+            phase = 'shake';
+            tPhase = curTs;
+            canvas.style.cursor = 'default';
+            return;
+          }
+        }
+      };
+
+      function frame(ts) {
+        curTs = ts;
+        if (!start) { start = ts; last = ts; }
+        const t = ts - start;
+        const dt = Math.min((ts - last) / 16.67, 3);
+        last = ts;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        if (phase === 'shuffle') {
+          if (t < T_INTRO) {
+            balls.forEach((b, i) => {
+              b.x = baseX[slotOf[i]];
+              b.y = cy - Math.abs(Math.sin(t / 90 + i)) * 12;
+              b.angle = Math.sin(t / 60 + i) * 0.15;
+            });
+          } else {
+            const k = Math.floor((t - T_INTRO) / T_SWAP);
+            while (applied < Math.min(k, swaps.length)) {
+              const [a, b] = swaps[applied];
+              const ia = ballInSlot(a), ib = ballInSlot(b);
+              slotOf[ia] = b;
+              slotOf[ib] = a;
+              applied++;
+            }
+            balls.forEach((b, i) => { b.x = baseX[slotOf[i]]; b.y = cy; b.angle = 0; });
+
+            if (k < swaps.length) {
+              const [a, b] = swaps[k];
+              const p = ((t - T_INTRO) - k * T_SWAP) / T_SWAP;
+              const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+              const ia = ballInSlot(a), ib = ballInSlot(b);
+              balls[ia].x = baseX[a] + (baseX[b] - baseX[a]) * e;
+              balls[ia].y = cy - Math.sin(Math.PI * p) * 38;
+              balls[ib].x = baseX[b] + (baseX[a] - baseX[b]) * e;
+              balls[ib].y = cy + Math.sin(Math.PI * p) * 38;
+              if (k !== lastSwapIdx) { playSound('tick'); lastSwapIdx = k; }
+            } else {
+              phase = 'pick';
+              canvas.style.cursor = 'pointer';
+            }
+          }
+          drawHint('몬스터볼을 섞는 중...', 70, false);
+        }
+
+        if (phase === 'pick') {
+          balls.forEach((b, i) => {
+            b.x = baseX[slotOf[i]];
+            b.y = cy + Math.sin(performance.now() / 250 + i * 2) * 5;
+          });
+          drawHint('하나를 골라주세요!', 70, true);
+        }
+
+        if (phase === 'shake') {
+          const p = Math.min((ts - tPhase) / 1500, 1);
+          const sc = Math.floor(p * 3);
+          if (sc > shakeCount && sc <= 3) { shakeCount = sc; playSound('tick'); }
+          balls.forEach((b, i) => {
+            if (i === chosen) {
+              const mp = Math.min(p * 2, 1);
+              b.x = chosenX0 + (170 - chosenX0) * (1 - Math.pow(1 - mp, 3));
+              b.y = cy;
+              b.angle = Math.sin(p * Math.PI * 6) * 0.45;
+            } else {
+              b.alpha = Math.max(0.2, 1 - p * 1.2);
+            }
+          });
+          if (p >= 1) {
+            phase = 'open';
+            tPhase = ts;
+            balls[chosen].angle = 0;
+            playSound('win');
+            const colors = [winner.color, '#FFFFFF', '#FBBF24'];
+            for (let i = 0; i < 60; i++) {
+              parts.push(makeParticle(170, cy, Math.random() * Math.PI * 2, 2 + Math.random() * 5, colors[i % 3], 3 + Math.random() * 3, 40 + Math.random() * 30, 0.1));
+            }
+          }
+        }
+
+        if (phase === 'open' || phase === 'reveal') {
+          const p = Math.min((ts - tPhase) / 500, 1);
+          if (phase === 'open') {
+            balls[chosen].open = 1 - Math.pow(1 - p, 3);
+            if (p >= 1) { phase = 'reveal'; tPhase = ts; }
+          }
+        }
+
+        // 그리기: 선택 안 된 공 -> 선택된 공 -> 빛 -> 파티클 -> 텍스트
+        balls.forEach((b, i) => { if (i !== chosen) drawBall(b.x, b.y, r, b.angle, b.open, b.alpha); });
+        if (chosen >= 0) {
+          const b = balls[chosen];
+          drawBall(b.x, b.y, r, b.angle, b.open, b.alpha);
+          if (phase === 'open' || phase === 'reveal') {
+            const bp = Math.min((ts - (phase === 'open' ? tPhase : tPhase - 500)) / 700, 1);
+            if (bp < 1) drawBurst(b.x, b.y, bp);
+          }
+        }
+        stepParticles(parts, dt);
+
+        if (phase === 'reveal') {
+          const rp = Math.min((ts - tPhase) / 450, 1);
+          drawRevealText(winner.name, 170, 90, easeOutBack(rp));
+          if (ts - tPhase > 1100) {
+            pokeballClickHandler = null;
+            canvas.style.cursor = 'default';
+            finishSpin(winner);
+            return;
+          }
+        }
+
+        requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    function startSpin() {
+      const items = getActiveItems();
+      if (items.length === 0 || isSpinning) return;
+
+      isSpinning = true;
+      document.getElementById('spinBtn').disabled = true;
+
+      const winnerIndex = Math.floor(Math.random() * items.length);
+      const winner = items[winnerIndex];
+
+      if (currentGameMode === 'roulette') {
+        runRouletteAnimation(items, winnerIndex, winner);
+      } else if (currentGameMode === 'cannon') {
+        runCannonAnimation(winner);
+      } else if (currentGameMode === 'slot') {
+        runSlotAnimation(items, winner);
+      } else if (currentGameMode === 'pokeball') {
+        runPokeballAnimation(0, winner);
+      }
+    }
+
+    function runRouletteAnimation(items, winnerIndex, winner) {
+      const totalSlices = items.length;
+      const sliceArc = (Math.PI * 2) / totalSlices;
+      const targetAngle = (Math.PI * 2) * 5 + (totalSlices - winnerIndex - 0.5) * sliceArc - Math.PI / 2;
+
+      let start = null;
+      const duration = 3500;
+      let lastTick = 0;
+
+      function animate(timestamp) {
+        if (!start) start = timestamp;
+        const elapsed = timestamp - start;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+
+        rouletteAngle = easeOut * targetAngle;
+
+        if (elapsed - lastTick > 100 - progress * 50) {
+          playSound('tick');
+          lastTick = elapsed;
+        }
+
+        drawCanvas();
+
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          finishSpin(winner);
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+
+    function runSlotAnimation(items, winner) {
+      let count = 0;
+      const maxCount = 28;
+      const interval = setInterval(() => {
+        const tempItem = items[Math.floor(Math.random() * items.length)];
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSlotMachineScene(items, tempItem.name);
+        playSound('tick');
+        count++;
+
+        if (count >= maxCount) {
+          clearInterval(interval);
+          finishSpin(winner);
+        }
+      }, 70);
+    }
+
+
+    function finishSpin(winner) {
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
+      playSound('win');
+
+      try {
+        fireConfetti({
+          particleCount: 85,
+          spread: 75,
+          origin: { y: 0.6 }
+        });
+      } catch (e) {}
+
+      let catName = '1~9세대';
+      if (currentCategory === 'type') catName = '18가지 타입';
+      if (currentCategory === 'all') catName = describeFilter('전체 포켓몬');
+      if (currentCategory === 'custom') catName = '커스텀 4칸';
+      if (currentCategory === 'champ') catName = describeFilter('포켓몬 챔피언스');
+
+      historyLog.unshift({ category: catName, result: winner.name, time: new Date().toLocaleTimeString() });
+      updateHistoryUI();
+
+      if (currentCategory !== 'all') {
+        const autoExclude = document.getElementById('autoExcludeToggle').checked;
+        if (autoExclude) {
+          if (getActiveItems().length > 1) {
+            excludedSet.add(winner.id);
+            renderChips();
+          }
+        }
+      }
+
+      const chBtn = document.getElementById('modalChallengeBtn');
+      const champBtn = document.getElementById('modalChampBtn');
+      if (currentCategory === 'gen' || currentCategory === 'type') {
+        lastPick = { cat: currentCategory, id: winner.id };
+        const label = currentCategory === 'gen' ? winner.name : `${winner.name} 타입`;
+        chBtn.innerText = `🎯 ${label} 전체 포켓몬 챌린지 뽑기`;
+        champBtn.innerText = `🏆 ${label} 포챔스 챌린지 뽑기`;
+        chBtn.classList.remove('hidden');
+        champBtn.classList.remove('hidden');
+      } else {
+        lastPick = null;
+        chBtn.classList.add('hidden');
+        champBtn.classList.add('hidden');
+      }
+
+      document.getElementById('modalCategory').innerText = `${catName} 챌린지 결과`;
+      document.getElementById('modalResultText').innerText = winner.name;
+      document.getElementById('resultModal').classList.remove('hidden');
+
+      drawCanvas();
+    }
+
+    function closeModal() {
+      document.getElementById('resultModal').classList.add('hidden');
+    }
+
+    function updateHistoryUI() {
+      const container = document.getElementById('historyList');
+      if (historyLog.length === 0) {
+        container.innerHTML = `<div class="text-center text-slate-500 text-xs py-4">아직 뽑기 기록이 없습니다.</div>`;
+        return;
+      }
+      container.innerHTML = historyLog.map(item => `
+        <div class="flex items-center justify-between bg-slate-900/50 px-3 py-2 rounded-xl border border-slate-800">
+          <span class="text-xs text-slate-400 font-bold">[${item.category}]</span>
+          <span class="font-bold text-amber-300">${item.result}</span>
+          <span class="text-xs text-slate-500">${item.time}</span>
+        </div>
+      `).join('');
+    }
+
+    function clearHistory() {
+      historyLog = [];
+      updateHistoryUI();
+    }
+
+    renderChips();
+    drawCanvas();
+  </script>
+</body>
+</html>
