@@ -645,7 +645,18 @@
       1011:"과미르", 1012:"차데스", 1013:"그우린차", 1014:"조타구", 1015:"이야후", 1016:"기로치", 1017:"오거폰(벽록의 가면)", 1018:"브리두라스", 1019:"과미드라", 1020:"꿰뚫는화염",
       1021:"날뛰는우레", 1022:"무쇠암석", 1023:"무쇠감투", 1024:"테라파고스", 1025:"복숭악동"
     };
-
+    // ===== 이름 오타 보정 (번호: 올바른 이름) =====
+    Object.assign(POKEMON_NAMES, {
+      22: "깨비드릴조", 78: "날쌩마", 115: "캥카",
+      273: "도토링", 293: "소곤룡", 296: "마크탕",
+      461: "포푸니라",
+      523: "제브라이카", 526: "기가이어스", 528: "맘박쥐", 529: "두더류", 550: "배쓰나이",
+      684: "나룸퍼프", 695: "일레도리자드",
+      827: "훔쳐우", 830: "백솜모카",
+      896: "블리자포스",
+      930: "올리르바", 934: "콜로솔트",
+      987: "날개치는머리", 989: "모래털가죽",
+    });
     const ALL_POKEMON_DATA = [];
     const colorPalette = ['#EF4444', '#F59E0B', '#10B981', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#FF9D55', '#5090D6', '#63BB5B', '#F4D23C', '#CE416B', '#A552CC'];
 
@@ -858,8 +869,7 @@
     // ===== 포챔스 입국몬에 세대/타입 정보 연결 =====
     // 포챔스 목록의 표기가 도감 DB(POKEMON_NAMES)와 다른 이름은 여기서 맞춰 줍니다.
     const CHAMP_ALIASES = {
-      '캥카': '캥', '페리퍼': '패리퍼', '올리르바': '올리르', '콜로솔트': '콜로솔',
-      '클래피': '클레피', '일레도리자드': '일렉도리자드', '단지래풀': '단지래플', '포푸니라': '포포니라'
+      '페리퍼': '패리퍼', '클래피': '클레피', '단지래풀': '단지래플'
     };
     // 리전폼 목록(regionalForms)에 없는 폼
     const EXTRA_FORMS = {
@@ -2578,15 +2588,59 @@
       }
 
       // ---------- 포켓몬 / 타입 데이터 (기존 코드의 데이터 재사용) ----------
-      var MONS = [];
+            var MONS = [];
       for (var n = 1; n <= TOTAL; n++) {
         MONS.push({
           n: n,
+          species: n,
           name: POKEMON_NAMES[n] || ('포켓몬 #' + n),
           gen: DEX_GEN[n - 1] || 0,
           types: (DEX_TYPES[n - 1] || '').split('').filter(Boolean)
         });
       }
+
+      // 합체폼 / 체인지폼 (PokeAPI에서는 10000번대 번호를 씁니다)
+      // n: 기본 번호(아래에서 PokeAPI로 한 번 더 확인해 자동 보정), species: 원래 포켓몬 번호
+      var FORM_DEFS = [
+        { n: 10155, slug: 'necrozma-dusk',  species: 800, kind: '합체',   name: '네크로즈마(황혼의 갈기)', gen: 7, types: 'YS' },
+        { n: 10156, slug: 'necrozma-dawn',  species: 800, kind: '합체',   name: '네크로즈마(새벽의 날개)', gen: 7, types: 'YH' },
+        { n: 10157, slug: 'necrozma-ultra', species: 800, kind: '합체',   name: '울트라네크로즈마',        gen: 7, types: 'YA' },
+        { n: 10022, slug: 'kyurem-black',   species: 646, kind: '합체',   name: '블랙큐레무',              gen: 5, types: 'AI' },
+        { n: 10023, slug: 'kyurem-white',   species: 646, kind: '합체',   name: '화이트큐레무',            gen: 5, types: 'AI' },
+        { n: 10194, slug: 'calyrex-shadow', species: 898, kind: '합체',   name: '흑마버드렉스',            gen: 8, types: 'YH' },
+        { n: 10193, slug: 'calyrex-ice',    species: 898, kind: '합체',   name: '백마버드렉스',            gen: 8, types: 'YI' },
+        { n: 10191, slug: 'urshifu-rapid-strike',     species: 892,  kind: '체인지', name: '우라오스(연격의 태세)', gen: 8, types: 'CW' },
+        { n: 10273, slug: 'ogerpon-wellspring-mask',  species: 1017, kind: '체인지', name: '오거폰(우물의 가면)',   gen: 9, types: 'GW' },
+        { n: 10274, slug: 'ogerpon-hearthflame-mask', species: 1017, kind: '체인지', name: '오거폰(화덕의 가면)',   gen: 9, types: 'GF' },
+        { n: 10275, slug: 'ogerpon-cornerstone-mask', species: 1017, kind: '체인지', name: '오거폰(주춧돌의 가면)', gen: 9, types: 'GR' }
+      ];
+      FORM_DEFS.forEach(function (f) {
+        MONS.push({ n: f.n, species: f.species, slug: f.slug, form: true, kind: f.kind, name: f.name, gen: f.gen, types: f.types.split('') });
+      });
+
+      var MON_BY_N = {}, IDX = {};
+      function reindex() {
+        MON_BY_N = {}; IDX = {};
+        MONS.forEach(function (m, i) { MON_BY_N[m.n] = m; IDX[m.n] = i; });
+      }
+      reindex();
+      function noLabel(m) { return m.form ? m.kind + '폼' : '#' + pad(m.n); }
+      function neighbor(n, d) {
+        var j = (IDX[n] == null ? 0 : IDX[n]) + d;
+        return (j >= 0 && j < MONS.length) ? MONS[j].n : n;
+      }
+
+      // 폼의 실제 번호를 PokeAPI에서 확인해 바로잡기 (실패하거나 4초가 지나면 위 기본값 사용)
+      var formsSettled = false;
+      var formsReady = Promise.race([
+        Promise.all(MONS.filter(function (m) { return m.form; }).map(function (m) {
+          return fetch(API + 'pokemon/' + m.slug)
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (j) { if (!formsSettled && j && j.id) m.n = j.id; })
+            .catch(function () {});
+        })).then(function () { formsSettled = true; reindex(); }),
+        new Promise(function (res) { setTimeout(function () { formsSettled = true; res(); }, 4000); })
+      ]);
       var TYPE_BY_ID = {}, TYPE_BY_CODE = {};
       TYPE_DATA.forEach(function (t) { TYPE_BY_ID[t.id] = t; TYPE_BY_CODE[TYPE_CODE[t.id]] = t; });
 
@@ -2734,7 +2788,7 @@
           var shiny = mode === 'shiny' && st.shiny;
           return '<button type="button" class="dx-card' + (shiny ? ' shiny' : '') + '" data-n="' + m.n + '">' +
             (shiny ? '<span class="dx-spark">✨</span>' : '') +
-            '<span class="dx-no">#' + pad(m.n) + '</span>' +
+                        '<span class="dx-no">' + noLabel(m) + '</span>' +
             '<span class="dx-img">' + imgTag(m.n, shiny, '') + '</span>' +
             '<span class="dx-name">' + esc(m.name) + '</span>' +
             '<span class="dx-types">' + m.types.map(function (c) { return typeBadge(TYPE_BY_CODE[c]); }).join('') + '</span>' +
@@ -2860,10 +2914,10 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
       function statColor(v) { return v < 60 ? '#ef4444' : v < 90 ? '#f59e0b' : v < 120 ? '#22c55e' : '#06b6d4'; }
 
       function skeleton(n) {
-        var m = MONS[n - 1];
+        var m = MON_BY_N[n];
         return '<div data-sec="main">' +
           '<div class="dx-hero"><div class="dx-fig">' + imgTag(n, false, '') + '</div>' +
-          '<div class="space-y-3"><div><div class="dx-sub">#' + pad(n) + '</div><div class="dx-h1">' + esc(m.name) + '</div></div>' +
+          '<div class="space-y-3"><div><div class="dx-sub">' + noLabel(m) + '</div><div class="dx-h1">' + esc(m.name) + '</div></div>' +
           '<div class="dx-types" style="justify-content:flex-start">' + m.types.map(function (c) { return typeBadge(TYPE_BY_CODE[c]); }).join('') + '</div>' +
           '<div class="dx-load">도감 정보를 불러오는 중…</div></div></div></div>' +
           '<div data-sec="rest"></div>';
@@ -2922,22 +2976,24 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
       }
 
       async function openDex(n, keepScroll) {
-        n = Math.max(1, Math.min(TOTAL, n | 0));
+               n = Math.max(1, Math.min(TOTAL, n | 0));
+               n = n | 0;
+        if (!MON_BY_N[n]) return;
         var my = ++dexToken;
         dexN = n;
-        var m = MONS[n - 1];
+        var m = MON_BY_N[n];
         document.getElementById('shinyModal').classList.add('hidden');
         dexModal.classList.remove('hidden');
         lockScroll();
-        document.getElementById('dexBarTitle').textContent = '#' + pad(n) + ' ' + m.name;
-        document.getElementById('dexPrev').disabled = n <= 1;
-        document.getElementById('dexNext').disabled = n >= TOTAL;
+        document.getElementById('dexBarTitle').textContent = noLabel(m) + ' ' + m.name;
+        document.getElementById('dexPrev').disabled = IDX[n] <= 0;
+        document.getElementById('dexNext').disabled = IDX[n] >= MONS.length - 1;
         dexBody.innerHTML = skeleton(n);
         if (!keepScroll) dexBody.scrollTop = 0;
 
         var poke, species;
         try {
-          var r = await Promise.all([getJSON(API + 'pokemon/' + n), getJSON(API + 'pokemon-species/' + n)]);
+                    var r = await Promise.all([getJSON(API + 'pokemon/' + n), getJSON(API + 'pokemon-species/' + m.species)]);
           poke = r[0]; species = r[1];
         } catch (e) {
           if (my !== dexToken) return;
@@ -2962,8 +3018,8 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
           '<div class="dx-hero">' +
             '<div class="dx-fig" style="--g:' + glow + '77">' + imgTag(n, false, '') + '</div>' +
             '<div class="space-y-3">' +
-              '<div><div class="dx-sub">#' + pad(n) + ' · ' + (m.gen ? m.gen + '세대' : '') + (genus ? ' · ' + esc(genus) : '') + '</div>' +
-              '<div class="dx-h1">' + esc(koName(species.names, m.name)) + '</div></div>' +
+                           '<div><div class="dx-sub">' + noLabel(m) + ' · ' + (m.gen ? m.gen + '세대' : '') + (genus ? ' · ' + esc(genus) : '') + '</div>' +
+              '<div class="dx-h1">' + esc(m.form ? m.name : koName(species.names, m.name)) + '</div></div>' +
               '<div>' + badges + '</div>' +
               '<div class="dx-types" style="justify-content:flex-start">' + typesHTML + '</div>' +
               '<div class="dx-facts"><span>키 <b>' + (poke.height / 10).toFixed(1) + ' m</b></span><span>몸무게 <b>' + (poke.weight / 10).toFixed(1) + ' kg</b></span></div>' +
@@ -3004,7 +3060,7 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
           var box = dexBody.querySelector('[data-sec=evo]');
           try {
             var chain = await getJSON(species.evolution_chain.url);
-            var html = await evoHTML(chain.chain, null, n);
+                       var html = await evoHTML(chain.chain, null, m.species);
             if (my !== dexToken || !box) return;
             var single = !(chain.chain.evolves_to && chain.chain.evolves_to.length);
             box.innerHTML = (single ? '<div class="dx-load" style="padding:0 0 8px">진화하지 않는 포켓몬이에요.</div>' : '') + '<div class="dx-evo">' + html + '</div>';
@@ -3090,24 +3146,25 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         if (node) openDex(+node.dataset.n);
       });
       document.getElementById('dexClose').onclick = closeDex;
-      document.getElementById('dexPrev').onclick = function () { openDex(dexN - 1); };
-      document.getElementById('dexNext').onclick = function () { openDex(dexN + 1); };
+      document.getElementById('dexPrev').onclick = function () { openDex(neighbor(dexN, -1)); };
+      document.getElementById('dexNext').onclick = function () { openDex(neighbor(dexN, 1)); };
       dexModal.addEventListener('mousedown', function (e) { if (e.target === dexModal) closeDex(); });
 
       // ---------- 이로치 도감 상세 ----------
       var shinyModal = document.getElementById('shinyModal'), shinyBody = document.getElementById('shinyBody'), shinyN = 0;
       function openShiny(n) {
-        n = Math.max(1, Math.min(TOTAL, n | 0));
+               n = n | 0;
+        if (!MON_BY_N[n]) return;
         shinyN = n;
-        var m = MONS[n - 1];
+        var m = MON_BY_N[n];
         dexModal.classList.add('hidden'); dexToken++;
         shinyModal.classList.remove('hidden');
         lockScroll();
-        document.getElementById('shinyBarTitle').textContent = '#' + pad(n) + ' ' + m.name;
-        document.getElementById('shinyPrev').disabled = n <= 1;
-        document.getElementById('shinyNext').disabled = n >= TOTAL;
+        document.getElementById('shinyBarTitle').textContent = noLabel(m) + ' ' + m.name;
+        document.getElementById('shinyPrev').disabled = IDX[n] <= 0;
+        document.getElementById('shinyNext').disabled = IDX[n] >= MONS.length - 1;
         shinyBody.innerHTML =
-          '<div style="text-align:center"><div class="dx-sub">#' + pad(n) + ' · ' + m.gen + '세대</div><div class="dx-h1">' + esc(m.name) + '</div>' +
+                    '<div style="text-align:center"><div class="dx-sub">' + noLabel(m) + ' · ' + m.gen + '세대</div><div class="dx-h1">' + esc(m.name) + '</div>' +
           '<div class="dx-types" style="margin-top:8px">' + m.types.map(function (c) { return typeBadge(TYPE_BY_CODE[c]); }).join('') + '</div></div>' +
           '<div class="dx-vs">' +
             '<div><div class="dx-fig">' + imgTag(n, false, '') + '</div><div class="cap">일반 색</div></div>' +
@@ -3129,8 +3186,8 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         if (!dOpen && !sOpen) return;
         if (e.target && /^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)) return;
         if (e.key === 'Escape') { dOpen ? closeDex() : closeShiny(); }
-        else if (e.key === 'ArrowLeft') { dOpen ? openDex(dexN - 1, true) : openShiny(shinyN - 1); }
-        else if (e.key === 'ArrowRight') { dOpen ? openDex(dexN + 1, true) : openShiny(shinyN + 1); }
+        else if (e.key === 'ArrowLeft') { dOpen ? openDex(neighbor(dexN, -1), true) : openShiny(neighbor(shinyN, -1)); }
+        else if (e.key === 'ArrowRight') { dOpen ? openDex(neighbor(dexN, 1), true) : openShiny(neighbor(shinyN, 1)); }
       });
 
       // ---------- 메뉴 / 화면 전환 ----------
@@ -3139,10 +3196,14 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         dex: '레벨업 기술, 특성, 종족값, 약점, 진화 계열까지 포켓몬 정보를 확인해 보세요!',
         shiny: '일반 색과 이로치 색을 나란히 비교해 보세요!'
       };
+            var galleryPending = {};
       function ensureGallery(v) {
-        if (galleries[v]) return;
+        if (galleries[v] || galleryPending[v]) return;
+        galleryPending[v] = true;
         var root = document.getElementById('view-' + v);
-        galleries[v] = makeGallery(root, v, v === 'dex' ? openDex : openShiny);
+        formsReady.then(function () {
+          galleries[v] = makeGallery(root, v, v === 'dex' ? openDex : openShiny);
+        });
       }
       function showView(v, quiet) {
         if (v !== 'picker' && v !== 'dex' && v !== 'shiny') v = 'picker';
