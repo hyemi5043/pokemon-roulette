@@ -2692,6 +2692,62 @@ REGION_DEFS.forEach(function (r) {
               name: r[3], gen: r[4], types: r[5].split('') });
 });
 
+      var ALT_DEFS = [
+  [10001,'deoxys-attack',386,'테오키스(어택폼)',3,'Y'],
+  [10002,'deoxys-defense',386,'테오키스(디펜스폼)',3,'Y'],
+  [10003,'deoxys-speed',386,'테오키스(스피드폼)',3,'Y'],
+  [10004,'wormadam-sandy',413,'도롱마담(모래땅도롱)',4,'BD'],
+  [10005,'wormadam-trash',413,'도롱마담(쓰레기도롱)',4,'BS'],
+  [10013,'castform-sunny',351,'캐스퐁(태양의 모습)',3,'F'],
+  [10014,'castform-rainy',351,'캐스퐁(빗방울의 모습)',3,'W'],
+  [10015,'castform-snowy',351,'캐스퐁(눈구름의 모습)',3,'I'],
+  [10008,'rotom-heat',479,'로토무(히트로토무)',4,'EF'],
+  [10009,'rotom-wash',479,'로토무(워시로토무)',4,'EW'],
+  [10010,'rotom-frost',479,'로토무(프로스트로토무)',4,'EI'],
+  [10011,'rotom-fan',479,'로토무(스핀로토무)',4,'EL'],
+  [10012,'rotom-mow',479,'로토무(커트로토무)',4,'EG'],
+  [10245,'dialga-origin',483,'디아루가(오리진폼)',4,'SA'],
+  [10246,'palkia-origin',484,'펄기아(오리진폼)',4,'WA'],
+  [10007,'giratina-origin',487,'기라티나(오리진폼)',4,'HA'],
+  [10006,'shaymin-sky',492,'쉐이미(스카이폼)',4,'GL'],
+  [10017,'darmanitan-zen',555,'불비달마(달마모드)',5,'FY'],
+  [10019,'tornadus-therian',641,'토네로스(영물폼)',5,'L'],
+  [10020,'thundurus-therian',642,'볼트로스(영물폼)',5,'EL'],
+  [10021,'landorus-therian',645,'랜드로스(영물폼)',5,'DL'],
+  [10249,'enamorus-therian',905,'러브로스(영물폼)',9,'ZL'],
+  [10024,'keldeo-resolute',647,'케르디오(각오의 모습)',5,'WC'],
+  [10018,'meloetta-pirouette',648,'메로엣타(스텝폼)',5,'NC'],
+  [10026,'aegislash-blade',681,'킬가르도(블레이드폼)',6,'SH'],
+  [10086,'hoopa-unbound',720,'후파(굴레를 벗어난 모습)',6,'YK'],
+  [10181,'zygarde-10',718,'지가르데(10%폼)',6,'DA'],
+  [10182,'zygarde-complete',718,'지가르데(퍼펙트폼)',6,'DA'],
+  [10117,'greninja-ash',658,'지우개굴닌자',6,'WK'],
+  [10123,'oricorio-pom-pom',741,'춤추새(퐁퐁스타일)',7,'EL'],
+  [10124,'oricorio-pau',741,'춤추새(파우스타일)',7,'YL'],
+  [10125,'oricorio-sensu',741,'춤추새(스타일)',7,'HL'],
+  [10127,'wishiwashi-school',746,'약어리(군집의 모습)',7,'W'],
+  [10136,'minior-red',774,'메테노(빨강 코어)',7,'RL'],
+  [10137,'minior-orange',774,'메테노(주황 코어)',7,'RL'],
+  [10138,'minior-yellow',774,'메테노(노랑 코어)',7,'RL'],
+  [10139,'minior-green',774,'메테노(초록 코어)',7,'RL'],
+  [10140,'minior-blue',774,'메테노(파랑 코어)',7,'RL'],
+  [10141,'minior-indigo',774,'메테노(남색 코어)',7,'RL'],
+  [10142,'minior-violet',774,'메테노(보라 코어)',7,'RL'],
+  [10184,'toxtricity-low-key',849,'윽우지(로우한 모습)',8,'EP'],
+  [10185,'eiscue-noice',875,'빙큐보(나이스페이스)',8,'I'],
+  [10187,'morpeko-hangry',877,'모르페코(배고픈 모양)',8,'EK'],
+  [10188,'zacian-crowned',888,'자시안(검왕)',8,'ZS'],
+  [10189,'zamazenta-crowned',889,'자마젠타(방패왕)',8,'CS'],
+  [10256,'palafin-hero',964,'돌핀맨(마이티폼)',9,'W'],
+  [10277,'terapagos-terastal',1024,'테라파고스(테라스탈폼)',9,'N'],
+  [10278,'terapagos-stellar',1024,'테라파고스(스텔라폼)',9,'N']
+];
+      
+ALT_DEFS.forEach(function (r) {
+  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, kind: '체인지',
+              name: r[3], gen: r[4], types: r[5].split('') });
+});
+
       var MON_BY_N = {}, IDX = {};
       function reindex() {
         MON_BY_N = {}; IDX = {};
@@ -2713,7 +2769,7 @@ REGION_DEFS.forEach(function (r) {
             .then(function (j) { if (!formsSettled && j && j.id) m.n = j.id; })
             .catch(function () {});
         })).then(function () { formsSettled = true; reindex(); }),
-        new Promise(function (res) { setTimeout(function () { formsSettled = true; res(); }, 4000); })
+        new Promise(function (res) { setTimeout(function () { formsSettled = true; res(); }, 10000); })
       ]);
       var TYPE_BY_ID = {}, TYPE_BY_CODE = {};
       TYPE_DATA.forEach(function (t) { TYPE_BY_ID[t.id] = t; TYPE_BY_CODE[TYPE_CODE[t.id]] = t; });
