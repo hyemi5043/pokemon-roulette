@@ -248,6 +248,8 @@
 
     /* 화면 전환용 숨김 (Tailwind 로딩과 무관하게 동작) */
     #view-picker.hidden, #view-dex.hidden, #view-shiny.hidden, #modalDexBtn.hidden { display: none; }
+        .fan-footer { margin-top: 2.5rem; padding: 1rem 0 .5rem; border-top: 1px solid rgba(255,255,255,.08); text-align: center; font-size: 11px; line-height: 1.7; color: #64748b; }
+    .fan-footer a { color: #94a3b8; text-decoration: underline; }
   </style>
 </head>
 <body class="p-4 md:p-8 min-h-screen flex flex-col items-center">
@@ -445,6 +447,11 @@
     <section id="view-dex" class="hidden space-y-4"></section>
     <section id="view-shiny" class="hidden space-y-4"></section>
     <section id="view-mega" class="hidden space-y-4"></section>
+        <footer class="fan-footer">
+      <p>본 사이트는 팬이 만든 비공식 사이트이며, 닌텐도·게임프리크·크리처스·포켓몬코리아와 아무런 관련이 없습니다.</p>
+      <p>Pokémon 및 관련 명칭·이미지의 저작권과 상표권은 각 권리자에게 있습니다.</p>
+      <p>도감 데이터 출처: <a href="https://pokeapi.co" target="_blank" rel="noopener">PokeAPI</a></p>
+    </footer>
 
   </div>
 
