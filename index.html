@@ -2618,6 +2618,80 @@
         MONS.push({ n: f.n, species: f.species, slug: f.slug, form: true, kind: f.kind, name: f.name, gen: f.gen, types: f.types.split('') });
       });
 
+      // 리전폼 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 세대, 타입코드, (선택) 표시 종류]
+var REGION_DEFS = [
+  // 알로라
+  [10091,'rattata-alola',19,'알로라 꼬렛',7,'KN'],
+  [10092,'raticate-alola',20,'알로라 레트라',7,'KN'],
+  [10093,'raichu-alola',26,'알로라 라이츄',7,'EY'],
+  [10094,'sandshrew-alola',27,'알로라 모래두지',7,'IS'],
+  [10095,'sandslash-alola',28,'알로라 고지',7,'IS'],
+  [10096,'vulpix-alola',37,'알로라 식스테일',7,'I'],
+  [10097,'ninetales-alola',38,'알로라 나인테일',7,'IZ'],
+  [10098,'diglett-alola',50,'알로라 디그다',7,'DS'],
+  [10099,'dugtrio-alola',51,'알로라 닥트리오',7,'DS'],
+  [10100,'meowth-alola',52,'알로라 나옹',7,'K'],
+  [10101,'persian-alola',53,'알로라 페르시온',7,'K'],
+  [10102,'geodude-alola',74,'알로라 꼬마돌',7,'RE'],
+  [10103,'graveler-alola',75,'알로라 데구리',7,'RE'],
+  [10104,'golem-alola',76,'알로라 딱구리',7,'RE'],
+  [10105,'grimer-alola',88,'알로라 질퍽이',7,'PK'],
+  [10106,'muk-alola',89,'알로라 질뻐기',7,'PK'],
+  [10107,'exeggutor-alola',103,'알로라 나시',7,'GA'],
+  [10108,'marowak-alola',105,'알로라 텅구리',7,'FH'],
+  // 가라르
+  [10161,'meowth-galar',52,'가라르 나옹',8,'S'],
+  [10162,'ponyta-galar',77,'가라르 포니타',8,'Y'],
+  [10163,'rapidash-galar',78,'가라르 날쌩마',8,'YZ'],
+  [10164,'slowpoke-galar',79,'가라르 야돈',8,'Y'],
+  [10165,'slowbro-galar',80,'가라르 야도란',8,'PY'],
+  [10166,'farfetchd-galar',83,'가라르 파오리',8,'C'],
+  [10167,'weezing-galar',110,'가라르 또도가스',8,'PZ'],
+  [10168,'mr-mime-galar',122,'가라르 마임맨',8,'IY'],
+  [10169,'articuno-galar',144,'가라르 프리져',8,'YL'],
+  [10170,'zapdos-galar',145,'가라르 썬더',8,'CL'],
+  [10171,'moltres-galar',146,'가라르 파이어',8,'KL'],
+  [10172,'slowking-galar',199,'가라르 야도킹',8,'PY'],
+  [10173,'corsola-galar',222,'가라르 코산호',8,'H'],
+  [10174,'zigzagoon-galar',263,'가라르 지그제구리',8,'KN'],
+  [10175,'linoone-galar',264,'가라르 직구리',8,'KN'],
+  [10176,'darumaka-galar',554,'가라르 달막화',8,'I'],
+  [10177,'darmanitan-galar-standard',555,'가라르 불비달마',8,'I'],
+  [10178,'darmanitan-galar-zen',555,'가라르 불비달마(달마모드)',8,'IF'],
+  [10179,'yamask-galar',562,'가라르 데스마스',8,'DH'],
+  [10180,'stunfisk-galar',618,'가라르 메더',8,'DS'],
+  // 히스이
+  [10229,'growlithe-hisui',58,'히스이 가디',8,'FR'],
+  [10230,'arcanine-hisui',59,'히스이 윈디',8,'FR'],
+  [10231,'voltorb-hisui',100,'히스이 찌리리공',8,'EG'],
+  [10232,'electrode-hisui',101,'히스이 붐볼',8,'EG'],
+  [10233,'typhlosion-hisui',157,'히스이 블레이범',8,'FH'],
+  [10234,'qwilfish-hisui',211,'히스이 침바루',8,'KP'],
+  [10235,'sneasel-hisui',215,'히스이 포푸니',8,'CP'],
+  [10236,'samurott-hisui',503,'히스이 대검귀',8,'WK'],
+  [10237,'lilligant-hisui',549,'히스이 드레디어',8,'GC'],
+  [10238,'zorua-hisui',570,'히스이 조로아',8,'NH'],
+  [10239,'zoroark-hisui',571,'히스이 조로아크',8,'NH'],
+  [10240,'braviary-hisui',628,'히스이 워글',8,'YL'],
+  [10241,'sliggoo-hisui',705,'히스이 미끄네일',8,'SA'],
+  [10242,'goodra-hisui',706,'히스이 미끄래곤',8,'SA'],
+  [10243,'avalugg-hisui',713,'히스이 크레베이스',8,'IR'],
+  [10244,'decidueye-hisui',724,'히스이 모크나이퍼',8,'GC'],
+  [10247,'basculin-white-striped',550,'히스이 배쓰나이(흰줄무늬)',8,'W'],
+  // 팔데아
+  [10250,'tauros-paldea-combat-breed',128,'팔데아 켄타로스(컴뱃종)',9,'C'],
+  [10251,'tauros-paldea-blaze-breed',128,'팔데아 켄타로스(블레이즈종)',9,'CF'],
+  [10252,'tauros-paldea-aqua-breed',128,'팔데아 켄타로스(워터종)',9,'CW'],
+  [10253,'wooper-paldea',194,'팔데아 우파',9,'PD'],
+  // 기타 지역 폼
+  [10272,'ursaluna-bloodmoon',901,'다투곰(붉은 달)',9,'DN','기타'],
+  [10061,'floette-eternal',670,'플라엣테(영혼의 꽃)',6,'Z','기타']
+];
+REGION_DEFS.forEach(function (r) {
+  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, kind: r[6] || '리전',
+              name: r[3], gen: r[4], types: r[5].split('') });
+});
+
       var MON_BY_N = {}, IDX = {};
       function reindex() {
         MON_BY_N = {}; IDX = {};
