@@ -2576,8 +2576,8 @@
       var CUSTOM_IMG = {};   // { 번호: { n: 일반이미지URL, s: 이로치이미지URL } }
       function imgUrl(n, shiny, cdn) { 
         var c = CUSTOM_IMG[n];
-        if (c && (shiny ? c.s : c.n)) return shiny ? c.s : c.n;
-        return (cdn ? IMG_CDN : IMG) + (shiny ? 'shiny/' : '') + n + '.png}';
+        if (c && (shiny ? c.s : c.n)) return shiny ? c.s : c.n;    
+        return (cdn ? IMG_CDN : IMG) + (shiny ? 'shiny/' : '') + n + '.png';
       }
 
       // ▼ 신규 메가 이미지 등록 (여기에 추가)
