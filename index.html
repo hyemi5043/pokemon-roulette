@@ -2757,10 +2757,18 @@ ALT_DEFS.forEach(function (r) {
       }
       reindex();
       function noLabel(m) { return m.form ? m.kind + '폼' : '#' + pad(m.n); }
+      // 메가진화 / 원시회귀(원시가이오가·원시그란돈) 판별
+     function isMega(m) {
+     return !!(m.mega || /(^|-)mega(-|$)|-primal$/.test(m.slug || ''));
+}
       function neighbor(n, d) {
-        var j = (IDX[n] == null ? 0 : IDX[n]) + d;
-        return (j >= 0 && j < MONS.length) ? MONS[j].n : n;
-      }
+  var cur = MON_BY_N[n], j = IDX[n] == null ? 0 : IDX[n];
+  var grp = cur ? isMega(cur) : false;
+  for (j += d; j >= 0 && j < MONS.length; j += d) {
+    if (isMega(MONS[j]) === grp) return MONS[j].n;   // 같은 그룹 안에서만 이동
+  }
+  return n;
+}
 
       // 폼의 실제 번호를 PokeAPI에서 확인해 바로잡기 (실패하거나 4초가 지나면 위 기본값 사용)
       var formsSettled = false;
@@ -2947,8 +2955,8 @@ ALT_DEFS.forEach(function (r) {
           var q = st.q.trim().toLowerCase();
           var num = /^\d+$/.test(q) ? parseInt(q, 10) : null;
           st.list = MONS.filter(function (m) {
-            if (mode === 'dex' && m.mega) return false;
-            if (mode === 'mega' && !m.mega) return false;
+            if (mode === 'mega') { if (!isMega(m)) return false; }
+            else if (isMega(m)) return false;   // 도감·이로치 도감에서는 메가/원시 제외
             if (st.gens.size && !st.gens.has(m.gen)) return false;
             if (st.types.size && !m.types.some(function (t) { return st.types.has(t); })) return false;
             if (q) return num !== null ? m.n === num : m.name.toLowerCase().indexOf(q) >= 0;
@@ -3294,8 +3302,8 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         shinyModal.classList.remove('hidden');
         lockScroll();
         document.getElementById('shinyBarTitle').textContent = noLabel(m) + ' ' + m.name;
-        document.getElementById('shinyPrev').disabled = IDX[n] <= 0;
-        document.getElementById('shinyNext').disabled = IDX[n] >= MONS.length - 1;
+        document.getElementById('shinyPrev').disabled = neighbor(n, -1) === n
+        document.getElementById('shinyNext').disabled = neighbor(n, 1) === n
         shinyBody.innerHTML =
                     '<div style="text-align:center"><div class="dx-sub">' + noLabel(m) + ' · ' + m.gen + '세대</div><div class="dx-h1">' + esc(m.name) + '</div>' +
           '<div class="dx-types" style="margin-top:8px">' + m.types.map(function (c) { return typeBadge(TYPE_BY_CODE[c]); }).join('') + '</div></div>' +
@@ -3310,8 +3318,8 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
       }
       function closeShiny() { shinyModal.classList.add('hidden'); lockScroll(); }
       document.getElementById('shinyClose').onclick = closeShiny;
-      document.getElementById('shinyPrev').onclick = function () { openShiny(shinyN - 1); };
-      document.getElementById('shinyNext').onclick = function () { openShiny(shinyN + 1); };
+      document.getElementById('shinyPrev').onclick = function () { openShiny(neighbor(shinyN, -1)); };
+      document.getElementById('shinyNext').onclick = function () { openShiny(neighbor(shinyN, 1)); };
       shinyModal.addEventListener('mousedown', function (e) { if (e.target === shinyModal) closeShiny(); });
 
       document.addEventListener('keydown', function (e) {
