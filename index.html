@@ -3465,15 +3465,13 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         shiny: '일반 색과 이로치 색을 나란히 비교해 보세요!',
         mega: '메가진화·원시회귀 포켓몬의 이로치 색이 어떤지 확인해 보세요!'
       };
-            var galleryPending = {};
-      function ensureGallery(v) {
-        if (galleries[v] || galleryPending[v]) return;
-        galleryPending[v] = true;
-        var root = document.getElementById('view-' + v);
-        formsReady.then(function () {
-          galleries[v] = makeGallery(root, v, v === 'dex' ? openDex : openShiny);
-        });
-      }
+            var galleryPending = {}
+        function ensureGallery(v) {
+  if (galleries[v]) return;
+  var root = document.getElementById('view-' + v);
+  galleries[v] = makeGallery(root, v, v === 'dex' ? openDex : openShiny);
+  formsReady.then(function () { galleries[v].apply(); });
+        }
       function showView(v, quiet) {
        if (v !== 'picker' && v !== 'dex' && v !== 'shiny' && v !== 'mega') v = 'picker';
        ['picker', 'dex', 'shiny', 'mega'].forEach(function (k) {
