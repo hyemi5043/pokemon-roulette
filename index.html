@@ -219,6 +219,13 @@
     .dx-mv td.lv { font-weight: 800; color: #fbbf24; width: 52px; }
     .dx-mv tr:hover td { background: rgba(99, 102, 241, .1); }
     .dx-load { color: #64748b; font-size: 13px; font-weight: 700; padding: 14px 4px; }
+    /* 기술 습득 방식 탭 */
+.dx-mtabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.dx-mtabs button { padding: 6px 12px; border-radius: 10px; font-size: 12.5px; font-weight: 800; color: #94a3b8; background: #0f172a; border: 1px solid #334155; transition: all .15s; }
+.dx-mtabs button:hover { border-color: #818cf8; color: #fff; }
+.dx-mtabs button span { margin-left: 4px; font-size: 11px; color: #64748b; }
+.dx-mtabs button.on { background: #4f46e5; border-color: #818cf8; color: #fff; }
+.dx-mtabs button.on span { color: #c7d2fe; }
     .dx-err { text-align: center; padding: 28px 10px; color: #fca5a5; font-weight: 700; font-size: 14px; line-height: 1.7; }
     .dx-err button, .dx-link { margin-top: 10px; padding: 8px 16px; border-radius: 12px; background: #4f46e5; color: #fff; font-weight: 800; font-size: 13px; }
     .dx-link { margin-top: 0; background: #1e293b; border: 1px solid #334155; color: #cbd5e1; }
@@ -2831,7 +2838,8 @@
 
       // ---------- 포켓몬 도감 상세 ----------
       var dexModal = document.getElementById('dexModal'), dexBody = document.getElementById('dexBody');
-      var dexN = 0, dexToken = 0, curVer = null;
+      var dexN = 0, dexToken = 0, curVer = null, curMethod = 'level-up';
+var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '교배'], ['tutor', '기술 가르침']];
 
       var STAT_KO = { hp: 'HP', attack: '공격', defense: '방어', 'special-attack': '특수공격', 'special-defense': '특수방어', speed: '스피드' };
       var VG = [
@@ -2978,7 +2986,7 @@
             '<div class="dx-stat total"><span>합계</span><b>' + total + '</b><span></span></div></div>' +
           '<div class="dx-sec"><h4>타입 상성 <small>받는 대미지 기준</small></h4>' + weaknessHTML(typeIds) + '</div>' +
           '<div class="dx-sec"><h4>진화 계열</h4><div data-sec="evo"><div class="dx-load">불러오는 중…</div></div></div>' +
-          '<div class="dx-sec"><h4>레벨업으로 배우는 기술 <span data-sec="vsel"></span></h4><div data-sec="moves"><div class="dx-load">불러오는 중…</div></div></div>';
+          '<div class="dx-sec"><h4>배우는 기술 <span data-sec="vsel"></span></h4><div class="dx-mtabs" data-sec="mtabs"></div><div data-sec="moves"><div class="dx-load">불러오는 중…</div></div></div>';
 
         // 특성
         var abilities = poke.abilities.slice().sort(function (a, b) { return a.slot - b.slot; });
@@ -3005,36 +3013,74 @@
           }
         })();
 
-        // 레벨업 기술
-        var byVG = {};
+                // 배우는 기술 (레벨업 / 기술머신 / 교배 / 기술 가르침)
+        var byM = {};
         poke.moves.forEach(function (mv) {
           mv.version_group_details.forEach(function (d) {
-            if (d.move_learn_method.name !== 'level-up') return;
-            var vg = d.version_group.name;
-            (byVG[vg] = byVG[vg] || []).push({ name: mv.move.name, lv: d.level_learned_at });
+            var me = d.move_learn_method.name, vg = d.version_group.name;
+            if (!byM[me]) byM[me] = {};
+            (byM[me][vg] = byM[me][vg] || []).push({ name: mv.move.name, lv: d.level_learned_at });
           });
         });
-        var avail = VG.filter(function (v) { return byVG[v[0]]; });
-        var movesBox = dexBody.querySelector('[data-sec=moves]'), vsel = dexBody.querySelector('[data-sec=vsel]');
-        if (!avail.length) { movesBox.innerHTML = '<div class="dx-load">레벨업으로 배우는 기술 정보가 없어요.</div>'; return; }
-        if (!curVer || !byVG[curVer]) curVer = avail[0][0];
+        var avail = VG.filter(function (v) {
+          return METHODS.some(function (me) { return byM[me[0]] && byM[me[0]][v[0]]; });
+        });
+        var movesBox = dexBody.querySelector('[data-sec=moves]');
+        var vsel = dexBody.querySelector('[data-sec=vsel]');
+        var tabsBox = dexBody.querySelector('[data-sec=mtabs]');
+        if (!avail.length) { movesBox.innerHTML = '<div class="dx-load">기술 정보가 없어요.</div>'; return; }
+        if (!curVer || !avail.some(function (v) { return v[0] === curVer; })) curVer = avail[0][0];
         vsel.innerHTML = '<select class="dx-select" id="dexVer">' + avail.map(function (v) {
           return '<option value="' + v[0] + '"' + (v[0] === curVer ? ' selected' : '') + '>' + esc(v[1]) + '</option>';
         }).join('') + '</select>';
 
+        function methodLabel(key) {
+          return METHODS.filter(function (m) { return m[0] === key; })[0][1];
+        }
+        function drawTabs() {
+          tabsBox.innerHTML = METHODS.map(function (me) {
+            var c = ((byM[me[0]] || {})[curVer] || []).length;
+            return '<button type="button" data-m="' + me[0] + '" class="' + (me[0] === curMethod ? 'on' : '') + '">' + me[1] + '<span>' + c + '</span></button>';
+          }).join('');
+        }
+
         async function renderMoves() {
-          var ver = curVer, rows = (byVG[ver] || []).slice().sort(function (a, b) { return a.lv - b.lv || (a.name < b.name ? -1 : 1); });
+          var ver = curVer, meth = curMethod;
+          drawTabs();
+          var rows = (((byM[meth] || {})[ver]) || []).slice();
+          if (!rows.length) {
+            movesBox.innerHTML = '<div class="dx-load">이 게임에서는 ' + methodLabel(meth) + '(으)로 배우는 기술이 없어요.' +
+              (meth === 'egg' ? '<br>교배 기술은 진화 전 포켓몬에서만 표시되는 경우가 있어요.' : '') + '</div>';
+            return;
+          }
           movesBox.innerHTML = '<div class="dx-load">기술 정보를 불러오는 중… (' + rows.length + '개)</div>';
           var infos = await pmap(rows, function (r) { return moveInfo(r.name); }, 8);
-          if (my !== dexToken || ver !== curVer) return;
-          movesBox.innerHTML = '<div class="dx-mv-wrap"><table class="dx-mv"><thead><tr><th>Lv</th><th>기술</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>PP</th></tr></thead><tbody>' +
-            rows.map(function (r, i) {
-              var inf = infos[i] || { n: r.name.replace(/-/g, ' ') };
-              return '<tr><td class="lv">' + (r.lv > 0 ? r.lv : '진화') + '</td><td class="n">' + esc(inf.n) + '</td><td>' + typeBadge(TYPE_BY_ID[inf.t]) + '</td><td>' +
+          if (my !== dexToken || ver !== curVer || meth !== curMethod) return;
+
+          var items = rows.map(function (r, i) {
+            return { r: r, inf: infos[i] || { n: r.name.replace(/-/g, ' ') } };
+          });
+          var isLv = meth === 'level-up';
+          if (isLv) items.sort(function (a, b) { return a.r.lv - b.r.lv || (a.r.name < b.r.name ? -1 : 1); });
+          else items.sort(function (a, b) { return a.inf.n.localeCompare(b.inf.n, 'ko'); });
+
+          movesBox.innerHTML = '<div class="dx-mv-wrap"><table class="dx-mv"><thead><tr>' + (isLv ? '<th>Lv</th>' : '') +
+            '<th>기술</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>PP</th></tr></thead><tbody>' +
+            items.map(function (it) {
+              var inf = it.inf;
+              return '<tr>' + (isLv ? '<td class="lv">' + (it.r.lv > 0 ? it.r.lv : '진화') + '</td>' : '') +
+                '<td class="n">' + esc(inf.n) + '</td><td>' + typeBadge(TYPE_BY_ID[inf.t]) + '</td><td>' +
                 esc(CLS_KO[inf.c] || '-') + '</td><td>' + (inf.p || '-') + '</td><td>' + (inf.a || '-') + '</td><td>' + (inf.pp || '-') + '</td></tr>';
             }).join('') + '</tbody></table></div>';
         }
+
         document.getElementById('dexVer').onchange = function (e) { curVer = e.target.value; renderMoves(); };
+        tabsBox.onclick = function (e) {
+          var b = e.target.closest('button[data-m]');
+          if (!b) return;
+          curMethod = b.dataset.m;
+          renderMoves();
+        };
         renderMoves();
       }
       function closeDex() { dexModal.classList.add('hidden'); dexToken++; lockScroll(); }
