@@ -2976,8 +2976,7 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
       }
 
       async function openDex(n, keepScroll) {
-               n = Math.max(1, Math.min(TOTAL, n | 0));
-               n = n | 0;
+             n = n | 0;
         if (!MON_BY_N[n]) return;
         var my = ++dexToken;
         dexN = n;
