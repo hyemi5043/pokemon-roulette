@@ -2752,6 +2752,8 @@ ALT_DEFS.forEach(function (r) {
 
       // 메가진화 / 원시회귀 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 세대(원래 포켓몬 기준), 타입코드, 표시 종류]
 var MEGA_DEFS = [
+var MEGA_DEFS = [
+  // ===== 기존 메가 =====
   [10033,'venusaur-mega',3,'메가이상해꽃',1,'GP'],
   [10034,'charizard-mega-x',6,'메가리자몽X',1,'FA'],
   [10035,'charizard-mega-y',6,'메가리자몽Y',1,'FL'],
@@ -2801,7 +2803,54 @@ var MEGA_DEFS = [
   [10060,'abomasnow-mega',460,'메가눈설왕',4,'GI'],
   [10068,'gallade-mega',475,'메가엘레이드',4,'YC'],
   [10069,'audino-mega',531,'메가다부니',5,'NZ'],
-  [10075,'diancie-mega',719,'메가디안시',6,'RZ']
+  [10075,'diancie-mega',719,'메가디안시',6,'RZ'],
+
+  // ===== 신규 메가 (번호는 임시값, 실제 번호는 slug로 자동 보정) =====
+  [90001,'clefable-mega',36,'메가픽시',1,'ZL'],
+  [90002,'victreebel-mega',71,'메가우츠보트',1,'GP'],
+  [90003,'starmie-mega',121,'메가아쿠스타',1,'WY'],
+  [90004,'dragonite-mega',149,'메가망나뇽',1,'AS'],
+  [90005,'meganium-mega',154,'메가메가니움',2,'GZ'],
+  [90006,'feraligatr-mega',160,'메가장크로다일',2,'WA'],
+  [90007,'skarmory-mega',227,'메가무장조',2,'SL'],
+  [90008,'chimecho-mega',358,'메가치렁',3,'YS'],
+  [90009,'staraptor-mega',398,'메가찌르호크',4,'CL'],
+  [90010,'froslass-mega',478,'메가눈여아',4,'IH'],
+  [90011,'heatran-mega',485,'메가히드런',4,'FS'],
+  [90012,'darkrai-mega',491,'메가다크라이',4,'K'],
+  [90013,'emboar-mega',500,'메가염무왕',5,'FC'],
+  [90014,'excadrill-mega',530,'메가몰드류',5,'DS'],
+  [90015,'scolipede-mega',545,'메가펜드라',5,'BP'],
+  [90016,'scrafty-mega',560,'메가곤율거니',5,'KC'],
+  [90017,'eelektross-mega',604,'메가저리더프',5,'E'],
+  [90018,'chandelure-mega',609,'메가샹델라',5,'HF'],
+  [90019,'golurk-mega',623,'메가골루그',5,'DH'],
+  [90020,'escavalier-mega',589,'메가갑주무사',5,'BS'],
+  [90021,'chesnaught-mega',652,'메가브리가론',6,'GC'],
+  [90022,'delphox-mega',655,'메가마폭시',6,'FY'],
+  [90023,'greninja-mega',658,'메가개굴닌자',6,'WK'],
+  [90024,'pyroar-mega',668,'메가화염레오',6,'FN'],
+  [90025,'floette-eternal-mega',670,'메가플라엣테(영원의 꽃)',6,'Z'],
+  [90026,'meowstic-mega',678,'메가냐오닉스',6,'Y'],
+  [90027,'malamar-mega',687,'메가칼라마네로',6,'KY'],
+  [90028,'barbaracle-mega',689,'메가거북손데스',6,'RC'],
+  [90029,'dragalge-mega',691,'메가드래캄',6,'PA'],
+  [90030,'zygarde-mega',718,'메가지가르데',6,'AD'],
+  [90031,'raichu-mega-x',26,'메가라이츄X',1,'E'],
+  [90032,'raichu-mega-y',26,'메가라이츄Y',1,'E'],
+  [90033,'crabominable-mega',740,'메가모단단게',7,'CI'],
+  [90034,'magearna-mega',801,'메가마기아나',7,'SZ'],
+  [90035,'zeraora-mega',807,'메가제라오라',7,'E'],
+  [90036,'drampa-mega',780,'메가할비롱',7,'NA'],
+  [90037,'falinks-mega',870,'메가대여르',8,'C'],
+  [90038,'scovillain-mega',952,'메가스코빌런',9,'GF'],
+  [90039,'glimmora-mega',970,'메가킬라플로르',9,'RP'],
+  [90040,'tatsugiri-mega',978,'메가싸리용',9,'AW'],
+  [90041,'baxcalibur-mega',998,'메가드닐레이브',9,'AI'],
+  [90042,'lucario-mega-z',448,'메가루카리오Z',4,'CS'],
+  [90043,'absol-mega-z',359,'메가앱솔Z',3,'KH'],
+  [90044,'garchomp-mega-z',445,'메가한카리아스Z',4,'AD']
+];
 ];
 MEGA_DEFS.forEach(function (r) {
   MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, mega: true,
