@@ -280,6 +280,7 @@
         <button type="button" class="mm-btn on" data-view="picker">🎲 뽑기</button>
         <button type="button" class="mm-btn" data-view="dex">📖 포켓몬 도감</button>
         <button type="button" class="mm-btn" data-view="shiny">✨ 이로치 도감</button>
+        <button type="button" class="mm-btn" data-view="mega">💎 메가진화 도감</button>
       </div>
     </nav>
 
@@ -443,6 +444,7 @@
     <!-- 뷰 2: 포켓몬 도감 / 뷰 3: 이로치 도감 -->
     <section id="view-dex" class="hidden space-y-4"></section>
     <section id="view-shiny" class="hidden space-y-4"></section>
+    <section id="view-mega" class="hidden space-y-4"></section>
 
   </div>
 
@@ -2741,13 +2743,70 @@ REGION_DEFS.forEach(function (r) {
   [10256,'palafin-hero',964,'돌핀맨(마이티폼)',9,'W'],
   [10277,'terapagos-terastal',1024,'테라파고스(테라스탈폼)',9,'N'],
   [10278,'terapagos-stellar',1024,'테라파고스(스텔라폼)',9,'N']
-  [90412,'burmy',412,'도롱충이(모래땅도롱)',4,'B'],
-  [90413,'burmy',412,'도롱충이(쓰레기도롱)',4,'B'],
 ];
       
 ALT_DEFS.forEach(function (r) {
   MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, kind: '체인지',
               name: r[3], gen: r[4], types: r[5].split('') });
+});
+      
+      // 메가진화 + 원시회귀 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 타입코드]
+var MEGA_DEFS = [
+  [10033,'venusaur-mega',3,'메가이상해꽃','GP'],
+  [10034,'charizard-mega-x',6,'메가리자몽X','FA'],
+  [10035,'charizard-mega-y',6,'메가리자몽Y','FL'],
+  [10036,'blastoise-mega',9,'메가거북왕','W'],
+  [10090,'beedrill-mega',15,'메가독침붕','BP'],
+  [10073,'pidgeot-mega',18,'메가피죤투','NL'],
+  [10037,'alakazam-mega',65,'메가후딘','Y'],
+  [10071,'slowbro-mega',80,'메가야도란','WY'],
+  [10038,'gengar-mega',94,'메가팬텀','HP'],
+  [10039,'kangaskhan-mega',115,'메가캥카','N'],
+  [10040,'pinsir-mega',127,'메가쁘사이저','BL'],
+  [10041,'gyarados-mega',130,'메가갸라도스','WK'],
+  [10042,'aerodactyl-mega',142,'메가프테라','RL'],
+  [10043,'mewtwo-mega-x',150,'메가뮤츠X','YC'],
+  [10044,'mewtwo-mega-y',150,'메가뮤츠Y','Y'],
+  [10045,'ampharos-mega',181,'메가전룡','EA'],
+  [10072,'steelix-mega',208,'메가강철톤','SD'],
+  [10046,'scizor-mega',212,'메가핫삼','BS'],
+  [10047,'heracross-mega',214,'메가헤라크로스','BC'],
+  [10048,'houndoom-mega',229,'메가헬가','KF'],
+  [10049,'tyranitar-mega',248,'메가마기라스','RK'],
+  [10065,'sceptile-mega',254,'메가나무킹','GA'],
+  [10050,'blaziken-mega',257,'메가번치코','FC'],
+  [10064,'swampert-mega',260,'메가대짱이','WD'],
+  [10051,'gardevoir-mega',282,'메가가디안','YZ'],
+  [10066,'sableye-mega',302,'메가깜까미','KH'],
+  [10052,'mawile-mega',303,'메가입치트','SZ'],
+  [10053,'aggron-mega',306,'메가보스로라','S'],
+  [10054,'medicham-mega',308,'메가요가램','CY'],
+  [10055,'manectric-mega',310,'메가썬더볼트','E'],
+  [10070,'sharpedo-mega',319,'메가샤크니아','WK'],
+  [10087,'camerupt-mega',323,'메가폭타','FD'],
+  [10067,'altaria-mega',334,'메가파비코리','AZ'],
+  [10056,'banette-mega',354,'메가다크펫','H'],
+  [10057,'absol-mega',359,'메가앱솔','K'],
+  [10074,'glalie-mega',362,'메가얼음귀신','I'],
+  [10089,'salamence-mega',373,'메가보만다','AL'],
+  [10076,'metagross-mega',376,'메가메타그로스','SY'],
+  [10062,'latias-mega',380,'메가라티아스','AY'],
+  [10063,'latios-mega',381,'메가라티오스','AY'],
+  [10079,'rayquaza-mega',384,'메가레쿠쟈','AL'],
+  [10088,'lopunny-mega',428,'메가이어롭','NC'],
+  [10058,'garchomp-mega',445,'메가한카리아스','DA'],
+  [10059,'lucario-mega',448,'메가루카리오','CS'],
+  [10060,'abomasnow-mega',460,'메가눈설왕','GI'],
+  [10068,'gallade-mega',475,'메가엘레이드','YC'],
+  [10069,'audino-mega',531,'메가다부니','NZ'],
+  [10075,'diancie-mega',719,'메가디안시','RZ'],
+  [10077,'kyogre-primal',382,'원시가이오가','W'],
+  [10078,'groudon-primal',383,'원시그란돈','DF']
+];
+MEGA_DEFS.forEach(function (r) {
+  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, mega: true,
+              kind: r[1].indexOf('primal') >= 0 ? '원시' : '메가',
+              name: r[3], gen: DEX_GEN[r[2] - 1], types: r[4].split('') });
 });
 
       var MON_BY_N = {}, IDX = {};
@@ -2883,12 +2942,12 @@ ALT_DEFS.forEach(function (r) {
       // ---------- 갤러리 (도감 / 이로치 도감 공용) ----------
       var galleries = {};
       function makeGallery(root, mode, onOpen) {
-        var st = { q: '', gens: new Set(), types: new Set(), list: [], shown: 0, shiny: mode === 'shiny' };
+        var st = { q: '', gens: new Set(), types: new Set(), list: [], shown: 0, shiny: mode !== 'dex' };
         root.innerHTML =
           '<div class="switch-card rounded-3xl p-4 space-y-3">' +
             '<div class="flex gap-2 items-center">' +
               '<input type="search" class="dx-search" placeholder="이름 또는 번호로 검색 (예: 조로아크, 571)" autocomplete="off">' +
-              (mode === 'shiny' ? '<div class="dx-seg" data-role="seg"><button type="button" data-v="n">일반</button><button type="button" data-v="s" class="on sh">✨ 이로치</button></div>' : '') +
+              (mode !== 'dex' ? '<div class="dx-seg" data-role="seg"><button type="button" data-v="n">일반</button><button type="button" data-v="s" class="on sh">✨ 이로치</button></div>' : '') +
             '</div>' +
             '<div><div class="dx-label">세대</div><div class="dx-chips" data-role="gens"></div></div>' +
             '<div><div class="dx-label">타입 (하나라도 일치)</div><div class="dx-chips" data-role="types"></div></div>' +
@@ -2917,7 +2976,7 @@ ALT_DEFS.forEach(function (r) {
         }
 
         function cardHTML(m) {
-          var shiny = mode === 'shiny' && st.shiny;
+          var shiny = st.shiny;
           return '<button type="button" class="dx-card' + (shiny ? ' shiny' : '') + '" data-n="' + m.n + '">' +
             (shiny ? '<span class="dx-spark">✨</span>' : '') +
                         '<span class="dx-no">' + noLabel(m) + '</span>' +
@@ -2947,6 +3006,8 @@ ALT_DEFS.forEach(function (r) {
           var q = st.q.trim().toLowerCase();
           var num = /^\d+$/.test(q) ? parseInt(q, 10) : null;
           st.list = MONS.filter(function (m) {
+            if (mode === 'dex' && m.mega) return false;
+            if (mode === 'mega' && !m.mega) return false;
             if (st.gens.size && !st.gens.has(m.gen)) return false;
             if (st.types.size && !m.types.some(function (t) { return st.types.has(t); })) return false;
             if (q) return num !== null ? m.n === num : m.name.toLowerCase().indexOf(q) >= 0;
@@ -3326,6 +3387,7 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         picker: '세대, 타입, 전체 포켓몬, 포챔스 또는 커스텀 4칸 항목을 뽑아보세요!',
         dex: '레벨업 기술, 특성, 종족값, 약점, 진화 계열까지 포켓몬 정보를 확인해 보세요!',
         shiny: '일반 색과 이로치 색을 나란히 비교해 보세요!'
+        mega: '메가진화·원시회귀 포켓몬의 이로치 색이 어떤지 확인해 보세요!'
       };
             var galleryPending = {};
       function ensureGallery(v) {
@@ -3337,8 +3399,8 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
         });
       }
       function showView(v, quiet) {
-        if (v !== 'picker' && v !== 'dex' && v !== 'shiny') v = 'picker';
-        ['picker', 'dex', 'shiny'].forEach(function (k) {
+       if (v !== 'picker' && v !== 'dex' && v !== 'shiny' && v !== 'mega') v = 'picker';
+       ['picker', 'dex', 'shiny', 'mega'].forEach(function (k) {
           var el = document.getElementById('view-' + k);
           if (el) el.classList.toggle('hidden', k !== v);
         });
