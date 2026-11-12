@@ -2573,7 +2573,18 @@
           return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
         });
       }
-      function imgUrl(n, shiny, cdn) { return (cdn ? IMG_CDN : IMG) + (shiny ? 'shiny/' : '') + n + '.png'; }
+      var CUSTOM_IMG = {};   // { 번호: { n: 일반이미지URL, s: 이로치이미지URL } }
+      function imgUrl(n, shiny, cdn) { 
+        var c = CUSTOM_IMG[n];
+        if (c && (shiny ? c.s : c.n)) return shiny ? c.s : c.n;
+        return (cdn ? IMG_CDN : IMG) + (shiny ? 'shiny/' : '') + n + '.png}';
+      }
+
+      // ▼ 신규 메가 이미지 등록 (여기에 추가)
+CUSTOM_IMG[90001] = { n: 'https://image-cdn.poke-korea.com/103600?w=288&h=288&q=80', s: 'https://image-cdn.poke-korea.com/shiny/103600' };
+CUSTOM_IMG[90002] = { n: 'https://...', s: 'https://...' };
+// ...
+
       function imgTag(n, shiny, cls) {
         return '<img' + (cls ? ' class="' + cls + '"' : '') + ' loading="lazy" decoding="async" alt="" src="' + imgUrl(n, shiny, false) +
           '" data-alt="' + imgUrl(n, shiny, true) + '" onerror="dxImgErr(this)">';
@@ -2853,9 +2864,10 @@ var MEGA_DEFS = [
 ];
 ];
 MEGA_DEFS.forEach(function (r) {
-  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, mega: true,
+  var isNew = r[0] >= 90000;
+  MONS.push({ n: r[0], species: r[2], slug: isNew ? null : r[1], form: true, mega: true,
               kind: /primal/.test(r[1]) ? '원시회귀' : '메가진화',
-              name: r[3], gen: r[4], types: r[5].split('') });
+              name: r[3], gen: r[4], types: r[5].split(''), custom: isNew });
 });
       
       var MON_BY_N = {}, IDX = {};
@@ -2881,7 +2893,7 @@ MEGA_DEFS.forEach(function (r) {
       // 폼의 실제 번호를 PokeAPI에서 확인해 바로잡기 (실패하거나 4초가 지나면 위 기본값 사용)
       var formsSettled = false;
       var formsReady = Promise.race([
-        Promise.all(MONS.filter(function (m) { return m.form; }).map(function (m) {
+        Promise.all(MONS.filter(function (m) { return m.form && m.slug; }).map(function (m) {
           return fetch(API + 'pokemon/' + m.slug)
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (j) { if (!formsSettled && j && j.id) m.n = j.id; })
