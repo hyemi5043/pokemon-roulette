@@ -2750,65 +2750,6 @@ ALT_DEFS.forEach(function (r) {
               name: r[3], gen: r[4], types: r[5].split('') });
 });
       
-      // 메가진화 + 원시회귀 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 타입코드]
-var MEGA_DEFS = [
-  [10033,'venusaur-mega',3,'메가이상해꽃','GP'],
-  [10034,'charizard-mega-x',6,'메가리자몽X','FA'],
-  [10035,'charizard-mega-y',6,'메가리자몽Y','FL'],
-  [10036,'blastoise-mega',9,'메가거북왕','W'],
-  [10090,'beedrill-mega',15,'메가독침붕','BP'],
-  [10073,'pidgeot-mega',18,'메가피죤투','NL'],
-  [10037,'alakazam-mega',65,'메가후딘','Y'],
-  [10071,'slowbro-mega',80,'메가야도란','WY'],
-  [10038,'gengar-mega',94,'메가팬텀','HP'],
-  [10039,'kangaskhan-mega',115,'메가캥카','N'],
-  [10040,'pinsir-mega',127,'메가쁘사이저','BL'],
-  [10041,'gyarados-mega',130,'메가갸라도스','WK'],
-  [10042,'aerodactyl-mega',142,'메가프테라','RL'],
-  [10043,'mewtwo-mega-x',150,'메가뮤츠X','YC'],
-  [10044,'mewtwo-mega-y',150,'메가뮤츠Y','Y'],
-  [10045,'ampharos-mega',181,'메가전룡','EA'],
-  [10072,'steelix-mega',208,'메가강철톤','SD'],
-  [10046,'scizor-mega',212,'메가핫삼','BS'],
-  [10047,'heracross-mega',214,'메가헤라크로스','BC'],
-  [10048,'houndoom-mega',229,'메가헬가','KF'],
-  [10049,'tyranitar-mega',248,'메가마기라스','RK'],
-  [10065,'sceptile-mega',254,'메가나무킹','GA'],
-  [10050,'blaziken-mega',257,'메가번치코','FC'],
-  [10064,'swampert-mega',260,'메가대짱이','WD'],
-  [10051,'gardevoir-mega',282,'메가가디안','YZ'],
-  [10066,'sableye-mega',302,'메가깜까미','KH'],
-  [10052,'mawile-mega',303,'메가입치트','SZ'],
-  [10053,'aggron-mega',306,'메가보스로라','S'],
-  [10054,'medicham-mega',308,'메가요가램','CY'],
-  [10055,'manectric-mega',310,'메가썬더볼트','E'],
-  [10070,'sharpedo-mega',319,'메가샤크니아','WK'],
-  [10087,'camerupt-mega',323,'메가폭타','FD'],
-  [10067,'altaria-mega',334,'메가파비코리','AZ'],
-  [10056,'banette-mega',354,'메가다크펫','H'],
-  [10057,'absol-mega',359,'메가앱솔','K'],
-  [10074,'glalie-mega',362,'메가얼음귀신','I'],
-  [10089,'salamence-mega',373,'메가보만다','AL'],
-  [10076,'metagross-mega',376,'메가메타그로스','SY'],
-  [10062,'latias-mega',380,'메가라티아스','AY'],
-  [10063,'latios-mega',381,'메가라티오스','AY'],
-  [10079,'rayquaza-mega',384,'메가레쿠쟈','AL'],
-  [10088,'lopunny-mega',428,'메가이어롭','NC'],
-  [10058,'garchomp-mega',445,'메가한카리아스','DA'],
-  [10059,'lucario-mega',448,'메가루카리오','CS'],
-  [10060,'abomasnow-mega',460,'메가눈설왕','GI'],
-  [10068,'gallade-mega',475,'메가엘레이드','YC'],
-  [10069,'audino-mega',531,'메가다부니','NZ'],
-  [10075,'diancie-mega',719,'메가디안시','RZ'],
-  [10077,'kyogre-primal',382,'원시가이오가','W'],
-  [10078,'groudon-primal',383,'원시그란돈','DF']
-];
-MEGA_DEFS.forEach(function (r) {
-  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, mega: true,
-              kind: r[1].indexOf('primal') >= 0 ? '원시' : '메가',
-              name: r[3], gen: DEX_GEN[r[2] - 1], types: r[4].split('') });
-});
-
       var MON_BY_N = {}, IDX = {};
       function reindex() {
         MON_BY_N = {}; IDX = {};
