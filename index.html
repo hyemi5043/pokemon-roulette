@@ -2749,6 +2749,65 @@ ALT_DEFS.forEach(function (r) {
   MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, kind: '체인지',
               name: r[3], gen: r[4], types: r[5].split('') });
 });
+
+      // 메가진화 / 원시회귀 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 세대(원래 포켓몬 기준), 타입코드, 표시 종류]
+var MEGA_DEFS = [
+  [10033,'venusaur-mega',3,'메가이상해꽃',1,'GP'],
+  [10034,'charizard-mega-x',6,'메가리자몽X',1,'FA'],
+  [10035,'charizard-mega-y',6,'메가리자몽Y',1,'FL'],
+  [10036,'blastoise-mega',9,'메가거북왕',1,'W'],
+  [10090,'beedrill-mega',15,'메가독침붕',1,'BP'],
+  [10073,'pidgeot-mega',18,'메가피죤투',1,'NL'],
+  [10071,'slowbro-mega',80,'메가야도란',1,'WY'],
+  [10038,'gengar-mega',94,'메가팬텀',1,'HP'],
+  [10037,'alakazam-mega',65,'메가후딘',1,'Y'],
+  [10039,'kangaskhan-mega',115,'메가캥카',1,'N'],
+  [10040,'pinsir-mega',127,'메가쁘사이저',1,'BL'],
+  [10041,'gyarados-mega',130,'메가갸라도스',1,'WK'],
+  [10042,'aerodactyl-mega',142,'메가프테라',1,'RL'],
+  [10043,'mewtwo-mega-x',150,'메가뮤츠X',1,'YC'],
+  [10044,'mewtwo-mega-y',150,'메가뮤츠Y',1,'Y'],
+  [10045,'ampharos-mega',181,'메가전룡',2,'EA'],
+  [10046,'scizor-mega',212,'메가핫삼',2,'BS'],
+  [10047,'heracross-mega',214,'메가헤라크로스',2,'BC'],
+  [10048,'houndoom-mega',229,'메가헬가',2,'KF'],
+  [10072,'steelix-mega',208,'메가강철톤',2,'SD'],
+  [10049,'tyranitar-mega',248,'메가마기라스',2,'RK'],
+  [10065,'sceptile-mega',254,'메가나무킹',3,'GA'],
+  [10050,'blaziken-mega',257,'메가번치코',3,'FC'],
+  [10064,'swampert-mega',260,'메가대짱이',3,'WD'],
+  [10051,'gardevoir-mega',282,'메가가디안',3,'YZ'],
+  [10066,'sableye-mega',302,'메가깜까미',3,'KH'],
+  [10052,'mawile-mega',303,'메가입치트',3,'SZ'],
+  [10053,'aggron-mega',306,'메가보스로라',3,'S'],
+  [10054,'medicham-mega',308,'메가요가램',3,'CY'],
+  [10055,'manectric-mega',310,'메가썬더볼트',3,'E'],
+  [10087,'camerupt-mega',323,'메가폭타',3,'FD'],
+  [10070,'sharpedo-mega',319,'메가샤크니아',3,'WK'],
+  [10067,'altaria-mega',334,'메가파비코리',3,'AZ'],
+  [10056,'banette-mega',354,'메가다크펫',3,'H'],
+  [10057,'absol-mega',359,'메가앱솔',3,'K'],
+  [10074,'glalie-mega',362,'메가얼음귀신',3,'I'],
+  [10089,'salamence-mega',373,'메가보만다',3,'AL'],
+  [10076,'metagross-mega',376,'메가메타그로스',3,'SY'],
+  [10062,'latias-mega',380,'메가라티아스',3,'AY'],
+  [10063,'latios-mega',381,'메가라티오스',3,'AY'],
+  [10077,'kyogre-primal',382,'원시가이오가',3,'W'],
+  [10078,'groudon-primal',383,'원시그란돈',3,'DF'],
+  [10079,'rayquaza-mega',384,'메가레쿠쟈',3,'AL'],
+  [10088,'lopunny-mega',428,'메가이어롭',4,'NC'],
+  [10058,'garchomp-mega',445,'메가한카리아스',4,'AD'],
+  [10059,'lucario-mega',448,'메가루카리오',4,'CS'],
+  [10060,'abomasnow-mega',460,'메가눈설왕',4,'GI'],
+  [10068,'gallade-mega',475,'메가엘레이드',4,'YC'],
+  [10069,'audino-mega',531,'메가다부니',5,'NZ'],
+  [10075,'diancie-mega',719,'메가디안시',6,'RZ']
+];
+MEGA_DEFS.forEach(function (r) {
+  MONS.push({ n: r[0], species: r[2], slug: r[1], form: true, mega: true,
+              kind: /primal/.test(r[1]) ? '원시회귀' : '메가진화',
+              name: r[3], gen: r[4], types: r[5].split('') });
+});
       
       var MON_BY_N = {}, IDX = {};
       function reindex() {
@@ -2756,7 +2815,7 @@ ALT_DEFS.forEach(function (r) {
         MONS.forEach(function (m, i) { MON_BY_N[m.n] = m; IDX[m.n] = i; });
       }
       reindex();
-      function noLabel(m) { return m.form ? m.kind + '폼' : '#' + pad(m.n); }
+      function noLabel(m) { return m.form ? (m.mega ? m.kind : m.kind + '폼') : '#' + pad(m.n); }
       // 메가진화 / 원시회귀(원시가이오가·원시그란돈) 판별
      function isMega(m) {
      return !!(m.mega || /(^|-)mega(-|$)|-primal$/.test(m.slug || ''));
@@ -3396,7 +3455,7 @@ var METHODS = [['level-up', '레벨업'], ['machine', '기술머신'], ['egg', '
       // 첫 진입: 주소의 #dex / #shiny 로 바로 열기
       try {
         var h = (location.hash || '').replace('#', '');
-        if (h === 'dex' || h === 'shiny') showView(h, true);
+        if (h === 'dex' || h === 'shiny' || h === 'mega') showView(h, true);
       } catch (e) {}
     })();
   </script>
