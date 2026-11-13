@@ -2811,7 +2811,7 @@ ALT_DEFS.forEach(function (r) {
 });
       
       // ===== 비비용 무늬 (초원의 모양은 기본 #0666이라 제외, 나머지 19종 추가) =====
-var VIV_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
+var VIV_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/home/';
 var VIV_DEFS = [
   ['polar',        '설국의 모양'],
   ['tundra',       '설원의 모양'],
@@ -2839,7 +2839,7 @@ VIV_DEFS.forEach(function (v, i) {
   MONS.push({ n: id, species: 666, apiId: 666, slug: null, form: true, kind: '체인지',
               name: '비비용(' + v[1] + ')', gen: 6, types: ['B', 'L'] });
   CUSTOM_IMG[id] = { n: VIV_BASE + '666-' + v[0] + '.png',
-                     s: VIV_BASE + 'shiny/666-' + v[0] + '.png' };
+                   s: VIV_BASE + 'shiny/666-' + v[0] + '.png' };
 });
       // 메가진화 / 원시회귀 [PokeAPI 번호, slug, 원래 포켓몬 번호, 이름, 세대(원래 포켓몬 기준), 타입코드, 표시 종류]
 var MEGA_DEFS = [
